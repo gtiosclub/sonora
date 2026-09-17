@@ -5,3 +5,6 @@ List your name below:
 
 Evelyn
 Vedansh
+Judy Hsu
+Jocelyn
+Joshua
