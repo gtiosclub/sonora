@@ -1,7 +1,7 @@
 //
 //  ContentView.swift
 //  Sonora
-//
+//  Sean
 //  Created by Shreeya Garg on 9/13/26.
 //
 
