@@ -5,3 +5,7 @@ List your name below:
 
 Evelyn
 Rohith
+Vedansh
+Judy Hsu
+Jocelyn
+Joshua
