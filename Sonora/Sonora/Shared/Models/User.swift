@@ -21,6 +21,9 @@ struct User: Codable, Equatable, Identifiable {
     var streak: Int
     var streakFreezes: Int
     
+    //users' previous drills
+    var pastDrills: [Drill]
+    
     //user's skill and preference profiles
     var skillProfile: SkillProfile
     var preferenceProfile: PreferenceProfile
