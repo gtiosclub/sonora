@@ -6,3 +6,8 @@ List your name below:
 Evelyn
 
 Nidhi 
+Rohith
+Vedansh
+Judy Hsu
+Jocelyn
+Joshua
