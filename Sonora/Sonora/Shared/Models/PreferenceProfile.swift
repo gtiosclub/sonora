@@ -14,10 +14,16 @@ struct PreferenceProfile: Identifiable, Equatable, Codable {
     // MARK: MANDATORY
     
     // ADD preferences here
+    
+    //OPTIONAL: store topics that the user like
     var goodTopics : [Topics]
+    
+    //OPTIONAL: store topics that the user wants to stay away from
     var badTopics : [Topics]
-
-
+    
+    //store modes that user want to focus on
+    //first element of list is the mode to focus on most
+    var modes: [Session.Mode]
 }
 
 enum Topics: Equatable, Codable {
