@@ -9,3 +9,4 @@ Vedansh
 Judy Hsu
 Jocelyn
 Joshua
+Sean Kim
