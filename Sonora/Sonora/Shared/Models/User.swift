@@ -16,5 +16,6 @@ struct User: Codable, Equatable, Identifiable {
     var lastLogin: Date
     var streak: Int
     var skillProfile: SkillProfile
+    var preferenceProfile: PreferenceProfile
     // MARK: MANDATORY
 }
