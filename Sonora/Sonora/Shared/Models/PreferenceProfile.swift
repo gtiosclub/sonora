@@ -26,6 +26,7 @@ struct PreferenceProfile: Identifiable, Equatable, Codable {
     var modes: [Session.Mode]
 }
 
+//possible topics of interest and disinterest that the user can choose from
 enum Topics: Equatable, Codable {
     case environment,
          health,

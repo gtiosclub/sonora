@@ -13,12 +13,15 @@ struct Drill: Identifiable, Equatable, Codable {
     var userId: String
     // MARK: MANDATORY
     
+    
     var prompt: String
     var transcript: String
     var summary: String
     var mode: Session.Mode
     var date: Date
     
-    //skill focused on
-    //skill level up
+    //skill that the drill focused on and how much it leveled up
+    var skill: SkillProfile.Skill
+    var improvement: Int
+
 }
