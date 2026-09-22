@@ -11,5 +11,6 @@ Judy Hsu
 Jocelyn
 Joshua
 Sean Kim
+Kosei
 Nishanth
 Nabiha
