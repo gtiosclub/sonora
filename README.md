@@ -5,5 +5,13 @@ List your name below:
 
 Evelyn
 Judy
+Nidhi 
+Rohith
+Vedansh
 Jocelyn
 Joshua
+Sean Kim
+Kosei
+Nishanth
+Nabiha
+Eshaan
