@@ -23,7 +23,7 @@ struct SkillProfile: Identifiable, Equatable, Codable {
     
     struct Skill: Identifiable, Equatable, Codable {
         var id: String
-        var comment: String
+        var summary: String
     }
 }
 
