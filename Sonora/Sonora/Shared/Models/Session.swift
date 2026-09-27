@@ -16,6 +16,11 @@ struct Session: Identifiable, Codable, Equatable {
     var opponentType: OpponentType
     var startTime: Date
     var durationSeconds: Int
+    var topic: Topics?
+    var skillImprovement: SkillImprovement?
+    var summary: String?
+    var prompt: String?
+    var analysis: String?
     
     enum Mode: String, Codable {
         case interview, debate, speech
