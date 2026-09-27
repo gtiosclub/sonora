@@ -15,7 +15,7 @@ struct Drill: Identifiable, Equatable, Codable {
     var userId: String
     // MARK: MANDATORY
     
-    //basic info from the session
+    //basic info from the drill session
     var transcript: String
     var summary: String
     var mode: Session.Mode
@@ -34,7 +34,7 @@ struct Drill: Identifiable, Equatable, Codable {
     
     //notate which session it's from
     var sourceSession: Session
-    var topic: String
+    var topic: Topics?
     var prompt: String
     
 
