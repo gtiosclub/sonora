@@ -9,7 +9,7 @@ import FirebaseFirestore
 
 enum UserService {
     private static var users: CollectionReference {
-        Firestore.firestore().collection("users")
+        Firestore.firestore().collection("Users")
     }
 
     static func create(_ user: User) async throws {
