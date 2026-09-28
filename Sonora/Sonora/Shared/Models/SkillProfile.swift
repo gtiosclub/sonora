@@ -23,7 +23,16 @@ struct SkillProfile: Identifiable, Equatable, Codable {
     
     struct Skill: Identifiable, Equatable, Codable {
         var id: String
-        var comment: String
+        var summary: String
     }
+    
+
 }
 
+extension SkillProfile {
+    static func makeNew(userId: String) -> SkillProfile {
+        func empty() -> Skill { Skill(id: UUID().uuidString, summary: "") }
+        return SkillProfile(id: userId, userId: userId,
+                            content: empty(), clarity: empty(), confidence: empty(), engaging: empty())
+    }
+}
