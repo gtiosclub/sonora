@@ -4,7 +4,6 @@
 //
 //  Created by Yada Phongadulyasook on 9/21/26.
 //
-
 import Foundation
 
 struct Drill: Identifiable, Equatable, Codable {
