@@ -1,4 +1,5 @@
 import FirebaseAuth
+import FirebaseFirestore
 import Observation
 
 /// Single source of truth for auth state. Injected at the app root.
@@ -45,8 +46,19 @@ final class AuthManager {
         defer { isSigningUp = false }
 
         let result = try await Auth.auth().createUser(withEmail: email, password: password)
-        let newUser = User.makeNew(userId: result.user.uid, username: username, email: email)
-        try await UserService.create(newUser)
+        let uid = result.user.uid
+
+        let newUser = User.makeNew(userId: uid, username: username, email: email)
+        let newSkillProfile = SkillProfile.makeNew(userId: uid)
+        let newPreferenceProfile = PreferenceProfile(id: uid, userId: uid, goodTopics: [], badTopics: [], modes: [])
+
+        let db = Firestore.firestore()
+        let batch = db.batch()
+        try batch.setData(from: newUser, forDocument: db.collection("Users").document(uid))
+        try batch.setData(from: newSkillProfile, forDocument: db.collection("SkillProfile").document(uid))
+        try batch.setData(from: newPreferenceProfile, forDocument: db.collection("PreferencesProfile").document(uid))
+        try await batch.commit()
+
         currentUser = newUser
     }
 
