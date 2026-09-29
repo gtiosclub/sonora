@@ -12,22 +12,27 @@ struct ContentView: View {
     
     var body: some View {
         VStack {
-            Text("Hi, \(auth.currentUser?.username ?? "there")")
-                         .font(.title2.bold())
-                     Text(auth.currentUser?.email ?? "")
-                         .foregroundStyle(.secondary)
-                     Text(auth.userID ?? "no user")
-                         .font(.caption2)
-                         .foregroundStyle(.tertiary)
-
-            Button("Sign out", role: .destructive) {
-                try? auth.signOut()
+            NavigationStack{
+                Text("Hi, \(auth.currentUser?.username ?? "there")")
+                    .font(.title2.bold())
+                Text(auth.currentUser?.email ?? "")
+                    .foregroundStyle(.secondary)
+                Text(auth.userID ?? "no user")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                
+                Button("Sign out", role: .destructive) {
+                    try? auth.signOut()
+                }
+                .padding(.top, 8)
+                NavigationLink(destination: TestView()) {
+                    Text("Go to Test View")
+                }
             }
-            .padding(.top, 8)
         }
         .padding()
+        }
     }
-}
 
 #Preview {
     ContentView()
