@@ -17,4 +17,29 @@ struct User: Codable, Equatable, Identifiable {
     var streak: Int
     var skillProfile: SkillProfile
     // MARK: MANDATORY
+    
+    // MARK: FOR STREAK LOGIC
+    var lastDrillDate: Date?
+    
+    mutating func checkStreak() {
+        guard let lastDrillDate = lastDrillDate else {
+            streak = 0
+            return
+        }
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let lastDrillDay = calendar.startOfDay(for: lastDrillDate)
+
+        let daysSinceLastDrill = calendar.dateComponents(
+            [.day],
+            from: lastDrillDay,
+            to: today
+        ).day ?? 0
+
+        if daysSinceLastDrill > 1 {
+            streak = 0
+        }
+    }
 }
+

@@ -9,11 +9,11 @@
 import Foundation
 
 struct SkillProfile: Identifiable, Equatable, Codable {
-    // MARK: MANDATORY
     var id: String
     var userId: String
-    
-    // ADD Skills here
 
-    // MARK: MANDATORY
+    var content: Int
+    var engagement: Int
+    var speakingClarity: Int
+    var confidence: Int
 }
