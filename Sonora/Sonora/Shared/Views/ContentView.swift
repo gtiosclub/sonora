@@ -28,6 +28,9 @@ struct ContentView: View {
                 NavigationLink(destination: TestView()) {
                     Text("Go to Test View")
                 }
+                NavigationLink(destination: SkillProfileTestView()) {
+                    Text("Go to SkillProfile Test View")
+                }
             }
         }
         .padding()
