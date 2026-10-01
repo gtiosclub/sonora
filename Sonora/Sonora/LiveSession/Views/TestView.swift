@@ -24,6 +24,15 @@ struct TestView: View {
                         }
                     }
             }
+            Button("Test Join Wait Queue") {
+                Task {
+                        do {
+                            try await joinQueue(userID: auth.currentUser?.id ?? "", mode: Session.Mode.interview)
+                        } catch {
+                            print("Failed with error: \(error.localizedDescription)")
+                        }
+                    }
+            }
         }
         .padding()
     }
