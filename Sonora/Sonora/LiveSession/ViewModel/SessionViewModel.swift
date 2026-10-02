@@ -45,28 +45,29 @@ func acceptSession(userId: String, sessionID: String) async throws{
     }
 }
 
-func joinQueue(userID: String, mode: Session.Mode) async throws {
+func joinQueue(userId: String, mode: Session.Mode) async throws {
     // Creates firestore object
     let db = Firestore.firestore()
     
     // .document(userID) sets the document name to match the userID
-    let docRef = db.collection("WaitingUsers").document(userID)
+    let docRef = db.collection("WaitingUsers").document(userId)
     
     // Adds document to "Waiting users"
     try await docRef.setData([
-        "userID": userID,
+        "userId": userId,
         "mode": mode.rawValue
     ])
 }
 
-func cancelWaitingRequest(userID: String) async throws {
+func cancelWaitingRequest(userId: String) async throws {
     // Creates firestore object
     let db = Firestore.firestore()
     
     // Sets reference variable docRef to the document that needs to be deleted
-    let docRef = db.collection("WaitingUsers").document(userID)
+    let docRef = db.collection("WaitingUsers").document(userId)
     
     // Deletes document
+    // If userId doesn't exist, function doesn't do anything and no errors thrown
     try await docRef.delete()
 }
 

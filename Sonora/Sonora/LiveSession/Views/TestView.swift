@@ -27,7 +27,7 @@ struct TestView: View {
             Button("Test Join Wait Queue") {
                 Task {
                         do {
-                            try await joinQueue(userID: auth.currentUser?.id ?? "", mode: Session.Mode.interview)
+                            try await joinQueue(userId: auth.currentUser?.id ?? "", mode: Session.Mode.interview)
                         } catch {
                             print("Failed with error: \(error.localizedDescription)")
                         }
@@ -36,7 +36,7 @@ struct TestView: View {
             Button("Test Remove From Queue") {
                 Task {
                     do {
-                        try await cancelWaitingRequest(userID: auth.currentUser?.id ?? "")
+                        try await cancelWaitingRequest(userId: auth.currentUser?.id ?? "")
                     } catch {
                         print("Failed with error: \(error.localizedDescription)")
                     }
