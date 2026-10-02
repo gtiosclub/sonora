@@ -13,7 +13,17 @@ struct SkillProfile: Identifiable, Equatable, Codable {
     var id: String
     var userId: String
     
-    // ADD Skills here
+    //4 dimensions of speaking skills
+    var content: Skill
+    var clarity: Skill
+    var confidence: Skill
+    var engaging: Skill
+    
 
-    // MARK: MANDATORY
+    
+    struct Skill: Identifiable, Equatable, Codable {
+        var id: String
+        var comment: String
+    }
 }
+
