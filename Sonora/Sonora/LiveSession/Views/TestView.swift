@@ -33,6 +33,15 @@ struct TestView: View {
                         }
                     }
             }
+            Button("Test Remove From Queue") {
+                Task {
+                    do {
+                        try await cancelWaitingRequest(userID: auth.currentUser?.id ?? "")
+                    } catch {
+                        print("Failed with error: \(error.localizedDescription)")
+                    }
+                }
+            }
         }
         .padding()
     }
