@@ -6,15 +6,15 @@
 //
 
 import CoreGraphics
-import CoreMedia
+import Foundation
 
-struct BodyPoseJoint {
+struct BodyPoseJoint: Codable, Equatable {
     let name: String
     let position: CGPoint
-    let confidence: Float
+    let confidence: Double
 }
 
-struct BodyPoseSample {
-    let time: CMTime
+struct BodyPoseSample: Codable, Equatable {
+    let time: TimeInterval
     let joints: [BodyPoseJoint]
 }	

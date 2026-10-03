@@ -31,7 +31,10 @@ struct BodyPoseDebugView: View {
 
             for frame in frames {
                 // Skip frames where no person (or no confident joint) was found
-                guard let sample = try BodyPoseDetector().detectPose(in: frame) else { continue }
+                guard let sample = try BodyPoseDetector().detectPose(in: frame) else {
+                    lines.append("\(Int(frame.timestamp))s no person detected")
+                    continue
+                }
 
                 for joint in sample.joints {
                     let x = String(format: "%.2f", joint.position.x)

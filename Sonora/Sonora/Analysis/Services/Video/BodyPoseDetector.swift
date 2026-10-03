@@ -6,13 +6,12 @@
 //
 
 import Vision
-import CoreMedia
 import UIKit
 
 struct BodyPoseDetector {
 
     /// Joints below this confidence are skipped.
-    private let minimumConfidence: Float = 0.3
+    private let minimumConfidence: Double = 0.3
 
     /// The only joints we keep: shoulders and wrists.
     private let jointsToKeep: [(name: String, joint: VNHumanBodyPoseObservation.JointName)] = [
@@ -31,7 +30,10 @@ struct BodyPoseDetector {
         let request = VNDetectHumanBodyPoseRequest()
         let handler = VNImageRequestHandler(cgImage: cgImage)
         try handler.perform([request])
-        print("People found:", request.results?.count ?? 0)
+        let peopleFound = request.results?.count ?? 0
+        if peopleFound > 1 {
+            print("⚠️ \(peopleFound) people found at \(frame.timestamp)s, using the first one")
+        }
 
         // Use the first person Vision found
         guard let person = request.results?.first else { return nil }
@@ -40,15 +42,14 @@ struct BodyPoseDetector {
         var joints: [BodyPoseJoint] = []
         for (name, jointName) in jointsToKeep {
             let point = try person.recognizedPoint(jointName)
-            print(name, point.confidence)
-            if point.confidence >= minimumConfidence {
-                joints.append(BodyPoseJoint(name: name, position: point.location, confidence: point.confidence))
+            let pointConfidence = Double(point.confidence)
+            if pointConfidence >= minimumConfidence {
+                joints.append(BodyPoseJoint(name: name, position: point.location, confidence: pointConfidence))
             }
         }
 
         if joints.isEmpty { return nil }
 
-        let time = CMTime(seconds: frame.timestamp, preferredTimescale: 600)
-        return BodyPoseSample(time: time, joints: joints)
+        return BodyPoseSample(time: frame.timestamp, joints: joints)
     }
 }
