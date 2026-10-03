@@ -45,6 +45,7 @@ func acceptSession(userId: String, sessionID: String) async throws{
     }
 }
 
+
 func declineSession(userId: String, sessionID:String) async throws{
     let db = Firestore.firestore()
     
@@ -65,5 +66,15 @@ func declineSession(userId: String, sessionID:String) async throws{
     
 }
 
+
+
+func joinQueue(userID: String, mode: Session.Mode) async throws {
+    let db = Firestore.firestore()
+
+    try await db.collection("WaitingUsers").addDocument(data: [
+        "userID": userID,
+        "mode": mode.rawValue
+    ])
+}
 
 
