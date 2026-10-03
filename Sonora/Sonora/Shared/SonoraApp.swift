@@ -10,14 +10,18 @@ import FirebaseCore
 
 @main
 struct SonoraApp: App {
+    @State private var auth: AuthManager
 
     init() {
         FirebaseApp.configure()
+        _auth = State(initialValue: AuthManager())
     }
 
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
+                .environment(auth)
         }
     }
 }
