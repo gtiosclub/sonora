@@ -18,8 +18,8 @@ struct AudioExtractorDebugView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Audio Extractor").font(.title2.bold())
             HStack {
-                Button("Extract sample_video.mp4") {
-                    Task { await run(resource: "sample_video", ext: "mp4") }
+                Button("Extract sample_speech_black_screen.mp4") {
+                    Task { await run(resource: "sample_speech_black_screen", ext: "mp4") }
                 }
                 Button("Test sample_short.json") {
                     Task { await run(resource: "sample_short", ext: "json") }
