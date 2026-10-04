@@ -1,9 +1,3 @@
-//
-//  AudioExtractor.swift
-//  Sonora
-//
-//  Created by Nishanth Vadlamani on 9/29/26.
-//
 import AVFoundation
 enum AudioExtractorError: LocalizedError {
     case unreadableMedia(String)

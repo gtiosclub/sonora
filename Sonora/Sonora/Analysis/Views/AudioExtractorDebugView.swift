@@ -1,9 +1,3 @@
-//
-//  AudioExtracctorDebugView.swift
-//  Sonora
-//
-//  Created by Nishanth Vadlamani on 9/29/26.
-//
 import SwiftUI
 import AVFoundation
 

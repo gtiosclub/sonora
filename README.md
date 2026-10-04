@@ -25,6 +25,8 @@ Jocelyn
 
 Joshua
 
+Dev
+
 Sean Kim
 
 Kosei
@@ -36,3 +38,5 @@ Nabiha
 Eshaan
 
 Sruthi
+
+Kirtan
