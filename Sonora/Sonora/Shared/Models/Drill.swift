@@ -37,5 +37,8 @@ struct Drill: Identifiable, Equatable, Codable {
     var topic: Topics?
     var prompt: String
     
+    
+    var taskType: DrillTaskType?
+    
 
 }

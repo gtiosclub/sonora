@@ -24,6 +24,7 @@ struct Session: Identifiable, Codable, Equatable {
     var summary: String?
     var prompt: String?
     var analysis: String?
+    var scores: [Int]? //analysis subteams scores
     
     enum Mode: String, Codable {
         case interview, debate, speech

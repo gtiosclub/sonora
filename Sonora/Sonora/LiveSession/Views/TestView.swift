@@ -14,6 +14,7 @@ struct TestView: View {
             Text("Add a button that calls your function so we can test it ")
             Button("Example", role: .destructive) {}
                 .padding(.top, 8)
+            NavigationLink("Debate Drill Test") { DebateDrillTestView() }
         }
         .padding()
     }
