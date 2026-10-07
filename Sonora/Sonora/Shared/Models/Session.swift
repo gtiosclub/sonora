@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import FirebaseFirestore
 
 struct Session: Identifiable, Codable, Equatable {
     var id: String
@@ -16,20 +15,16 @@ struct Session: Identifiable, Codable, Equatable {
     var aIOpponent: AIOpponent?
     var mode: Mode
     var opponentType: OpponentType
-<<<<<<< HEAD
     var startTime: Date?  // when the session becomes active
-    var creaedAt: Date // when a pending session is created
+    var createdAt: Date // when a pending session is created
 
-    var durationSeconds: Int? 
-=======
-    var startTime: Date
-    var durationSeconds: Int
+    var durationSeconds: Int?
     var topic: Topics?
     var skillImprovement: SkillImprovement?
     var summary: String?
     var prompt: String?
     var analysis: String?
->>>>>>> 9c841ac (Created Sample Interview Sessions, Updated Session Struct)
+    var scores: [Int]? //analysis subteams scores
     
     enum Mode: String, Codable {
         case interview, debate, speech
@@ -42,11 +37,4 @@ struct Session: Identifiable, Codable, Equatable {
     enum OpponentType: String, Codable {
         case human, ai
     }
-    
-}
-struct WaitingUser: Codable, Identifiable {
-    @DocumentID var id: String?
-    var userID: String
-    var mode: String
-    var joinedAt: Date?
 }
