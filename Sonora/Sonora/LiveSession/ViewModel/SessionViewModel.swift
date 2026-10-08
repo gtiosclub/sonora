@@ -82,6 +82,17 @@ func joinQueue(userId: String, mode: Session.Mode) async throws {
     ])
 }
 
+// Finds one user waiting in the same mode, or returns nil if there isn't one
+func findWaitingMatch(mode: Session.Mode) async throws -> WaitingUser? {
+    let snapshot = try await Firestore.firestore()
+        .collection("WaitingUsers")
+        .whereField("mode", isEqualTo: mode.rawValue)
+        .limit(to: 1)
+        .getDocuments()
+
+    guard let document = snapshot.documents.first else { return nil }
+    return try document.data(as: WaitingUser.self)
+}
 
 func cancelWaitingRequest(userId: String) async throws {
     // Creates firestore object
