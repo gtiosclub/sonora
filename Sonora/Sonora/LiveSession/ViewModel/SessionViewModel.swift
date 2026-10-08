@@ -45,12 +45,118 @@ func acceptSession(userId: String, sessionID: String) async throws{
     }
 }
 
-func joinQueue(userID: String, mode: Session.Mode) async throws {
-    let db = Firestore.firestore()
 
-    try await db.collection("WaitingUsers").addDocument(data: [
-        "userID": userID,
+func declineSession(userId: String, sessionID:String) async throws{
+    let db = Firestore.firestore()
+    
+    let sessionRef = db.collection("Sessions").document(sessionID)
+    let document = try await sessionRef.getDocument()
+    
+    // check to make sure the session exists
+    guard document.exists else{
+        return
+    }
+    // Check to make sure the user is a participant
+    guard let participants = document.data()?["participants"] as? [String],
+          participants.contains(userId) else {
+        return
+    }
+    // Set the session status to declined
+    try await sessionRef.updateData(["status":"declined"])
+    
+}
+
+
+
+func joinQueue(userId: String, mode: Session.Mode) async throws {
+    // Creates firestore object
+    let db = Firestore.firestore()
+    
+    // .document(userID) sets the document name to match the userID
+    let docRef = db.collection("WaitingUsers").document(userId)
+    
+    // Adds document to "Waiting users"
+    try await docRef.setData([
+        "userId": userId,
         "mode": mode.rawValue
     ])
 }
+
+// Creates a new active session against the AI and saves it to the "Sessions" collection.
+// Returns the saved session.
+func createAISession(userId: String, mode: Session.Mode) async throws -> Session {
+    let ref = Firestore.firestore().collection("Sessions").document()  // new empty doc: Firestore picks the ID
+    let now = Date()
+    let session = Session(
+        id: ref.documentID,
+        participants: [userId],
+        status: .active,
+        acceptedBy: [userId],
+        mode: mode,
+        opponentType: .ai,
+        startTime: now,
+        creaedAt: now
+    )
+
+    try ref.setData(from: session)   // Dates are saved as Firestore timestamps
+    return session
+}
+// Finds one user waiting in the same mode, or returns nil if there isn't one
+func findWaitingMatch(mode: Session.Mode) async throws -> WaitingUser? {
+    let snapshot = try await Firestore.firestore()
+        .collection("WaitingUsers")
+        .whereField("mode", isEqualTo: mode.rawValue)
+        .limit(to: 1)
+        .getDocuments()
+
+    guard let document = snapshot.documents.first else { return nil }
+    return try document.data(as: WaitingUser.self)
+}
+
+func cancelWaitingRequest(userId: String) async throws {
+    // Creates firestore object
+    let db = Firestore.firestore()
+    
+    // Sets reference variable docRef to the document that needs to be deleted
+    let docRef = db.collection("WaitingUsers").document(userId)
+    
+    // Deletes document
+    // If userId doesn't exist, function doesn't do anything and no errors thrown
+    try await docRef.delete()
+}
+
+
+// Creates a new pending session between two users and saves it to Firestore.
+func createPendingSession(
+    userID1: String,
+    userID2: String,
+    mode: Session.Mode
+) async throws -> Session {
+    
+    // Create a new session document with an auto-generated ID.
+    let ref = Firestore.firestore()
+        .collection("Sessions")
+        .document()
+    
+    // Get the current date and time.
+    let now = Date()
+    
+    // Create the session.
+    let session = Session(
+        id: ref.documentID,
+        participants: [userID1, userID2],
+        status: .pending,
+        acceptedBy: [],
+        mode: mode,
+        opponentType: .human,
+        startTime: Optional.none,
+        creaedAt: now
+    )
+    
+    // Save the session to Firestore.
+    try ref.setData(from: session)
+    
+    return session
+}
+
 
