@@ -68,7 +68,8 @@ func declineSession(userId: String, sessionID:String) async throws{
 
 
 
-func joinQueue(userID: String, mode: Session.Mode) async throws {
+func joinQueue(userId: String, mode: Session.Mode) async throws {
+    // Creates firestore object
     let db = Firestore.firestore()
     
     // .document(userID) sets the document name to match the userID
@@ -80,6 +81,7 @@ func joinQueue(userID: String, mode: Session.Mode) async throws {
         "mode": mode.rawValue
     ])
 }
+
 
 func cancelWaitingRequest(userId: String) async throws {
     // Creates firestore object
