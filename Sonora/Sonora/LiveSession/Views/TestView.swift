@@ -29,6 +29,7 @@ struct TestView: View {
                 }
             }
 
+
             // Ticket 1: looks for a waiting user in .interview mode
             Button("Test Find Waiting Match") {
                 Task {
@@ -44,6 +45,15 @@ struct TestView: View {
             Text(output)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+            Button("Test Join Wait Queue") {
+                Task {
+                        do {
+                            try await joinQueue(userID: auth.currentUser?.id ?? "", mode: Session.Mode.interview)
+                        } catch {
+                            print("Failed with error: \(error.localizedDescription)")
+                        }
+                    }
+            }
         }
         .padding()
     }
