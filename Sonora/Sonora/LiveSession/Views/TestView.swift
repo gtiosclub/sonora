@@ -71,7 +71,22 @@ struct TestView: View {
                             print("Failed with error: \(error.localizedDescription)")
                         }
                     }
+            
             }
+            Button("Test Create AI Session") {
+                            Task {
+                                do {
+                                    let session = try await createAISession(userId: auth.currentUser?.id ?? "", mode: .interview)
+                                    output = "Created: \(session.id)"
+                                } catch {
+                                    output = "ERROR: \(error.localizedDescription)"
+                                }
+                            }
+                        }
+
+                        Text(output)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
         }
         .padding()
     }
