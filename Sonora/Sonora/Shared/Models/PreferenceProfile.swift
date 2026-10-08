@@ -13,7 +13,6 @@ struct PreferenceProfile: Identifiable, Equatable, Codable {
 
     var practiceLength: PracticeLength
     var difficulty: Difficulty
-    var practiceType: PracticeType
     var topics: [String]
     var feedbackStyle: FeedbackStyle
 
@@ -27,13 +26,6 @@ struct PreferenceProfile: Identifiable, Equatable, Codable {
         case easy
         case moderate
         case challenging
-    }
-
-    enum PracticeType: String, Codable {
-        case drills
-        case debates
-        case interviews
-        case presentations
     }
 
     enum FeedbackStyle: String, Codable {
