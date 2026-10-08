@@ -9,7 +9,6 @@
 import Foundation
 
 struct SkillProfile: Identifiable, Equatable, Codable {
-    // MARK: MANDATORY
     var id: String
     var userId: String
     
