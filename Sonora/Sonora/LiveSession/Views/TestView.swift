@@ -72,6 +72,7 @@ struct TestView: View {
                         }
                     }
             }
+            NavigationLink("Debate Drill Test") { DebateDrillTestView() }
         }
         .padding()
     }

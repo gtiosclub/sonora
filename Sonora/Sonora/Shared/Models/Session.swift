@@ -17,9 +17,15 @@ struct Session: Identifiable, Codable, Equatable {
     var mode: Mode
     var opponentType: OpponentType
     var startTime: Date?  // when the session becomes active
-    var creaedAt: Date // when a pending session is created
+    var createdAt: Date // when a pending session is created
 
-    var durationSeconds: Int? 
+    var durationSeconds: Int?
+    var topic: Topics?
+    var skillImprovement: SkillImprovement?
+    var summary: String?
+    var prompt: String?
+    var analysis: String?
+    var scores: [Int]? //analysis subteams scores
     
     enum Mode: String, Codable {
         case interview, debate, speech
