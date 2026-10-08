@@ -45,6 +45,29 @@ func acceptSession(userId: String, sessionID: String) async throws{
     }
 }
 
+
+func declineSession(userId: String, sessionID:String) async throws{
+    let db = Firestore.firestore()
+    
+    let sessionRef = db.collection("Sessions").document(sessionID)
+    let document = try await sessionRef.getDocument()
+    
+    // check to make sure the session exists
+    guard document.exists else{
+        return
+    }
+    // Check to make sure the user is a participant
+    guard let participants = document.data()?["participants"] as? [String],
+          participants.contains(userId) else {
+        return
+    }
+    // Set the session status to declined
+    try await sessionRef.updateData(["status":"declined"])
+    
+}
+
+
+
 func joinQueue(userId: String, mode: Session.Mode) async throws {
     // Creates firestore object
     let db = Firestore.firestore()
@@ -58,6 +81,7 @@ func joinQueue(userId: String, mode: Session.Mode) async throws {
         "mode": mode.rawValue
     ])
 }
+
 
 func cancelWaitingRequest(userId: String) async throws {
     // Creates firestore object

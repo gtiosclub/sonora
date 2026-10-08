@@ -42,6 +42,15 @@ struct TestView: View {
                     }
                 }
             }
+            Button("Test Decline Sesion") {
+                Task {
+                        do {
+                            try await declineSession(userId: auth.currentUser?.id ?? "", sessionID: "nfVcbgKJpHJSLFi70YjH")
+                        } catch {
+                            print("Failed with error: \(error.localizedDescription)")
+                        }
+                    }
+            }
         }
         .padding()
     }
