@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UIKit
 
 struct BodyPoseDebugView: View {
     @State private var lines: [String] = []
@@ -17,34 +16,30 @@ struct BodyPoseDebugView: View {
                 .font(.system(.body, design: .monospaced))
         }
         .task {
-            await runPoseDetection()
+            await runPostureAnalysis()
         }
     }
 
-    /// Samples the video at 1 frame per second, then lists the joints found in each frame.
-    private func runPoseDetection() async {
-        let videoURL = Bundle.main.url(forResource: "sample_video", withExtension: "mov")!
+    /// Samples the video at 1 frame per second, then lists the posture numbers for each second.
+    private func runPostureAnalysis() async {
+        let videoURL = Bundle.main.url(forResource: "sample_posture", withExtension: "mov")!
 
         do {
             let frames = try await FrameSampler().sampleFrames(from: videoURL)
-            print("Frames:", frames.count)
 
             for frame in frames {
-                // Skip frames where no person (or no confident joint) was found
-                guard let sample = try BodyPoseDetector().detectPose(in: frame) else {
-                    lines.append("\(Int(frame.timestamp))s no person detected")
+                guard let sample = try BodyPoseDetector().detectPose(in: frame),
+                      let posture = PostureAnalyzer().analyze(sample) else {
+                    lines.append("\(Int(frame.timestamp))s no pose found")
                     continue
                 }
 
-                for joint in sample.joints {
-                    let x = String(format: "%.2f", joint.position.x)
-                    let y = String(format: "%.2f", joint.position.y)
-                    let confidence = String(format: "%.2f", joint.confidence)
-                    lines.append("\(Int(frame.timestamp))s \(joint.name) (\(x), \(y)) \(confidence)")
-                }
+                let tilt = String(format: "%.1f", posture.shoulderTilt)
+                let head = String(format: "%.2f", posture.headHeight)
+                lines.append("\(Int(frame.timestamp))s tilt \(tilt)° head \(head)")
             }
         } catch {
-            print("Error: \(error)")
+            lines.append("Error: \(error)")
         }
     }
 }
