@@ -159,4 +159,21 @@ func createPendingSession(
     return session
 }
 
-
+func requestRandomMatch(userId: String, mode: Session.Mode) async throws -> Session? {
+    // Unwraps waitingUser object and
+    if let matchedUser = try await findWaitingMatch(mode: mode) {
+        // Removes user from queue
+        try await cancelWaitingRequest(userId: matchedUser.userID)
+        
+        // Creates a new session
+        let session = try await createPendingSession(
+            userID1: matchedUser.userID,
+            userID2: userId,
+            mode: mode)
+        return session
+    } else {
+        // Adds user to queue if nil is unwrapped
+        try await joinQueue(userId: userId, mode: mode)
+        return nil
+    }
+}
