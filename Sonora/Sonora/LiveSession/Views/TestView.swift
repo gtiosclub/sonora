@@ -73,6 +73,15 @@ struct TestView: View {
                     }
             
             }
+            Button ("Create Pending Session") {
+                Task {
+                        do {
+                            try await createPendingSession(userID1: "abcd", userID2: "abc", mode: .interview)
+                        } catch {
+                            print("Failed with error: \(error.localizedDescription)")
+                        }
+                    }
+            }
             Button("Test Create AI Session") {
                             Task {
                                 do {

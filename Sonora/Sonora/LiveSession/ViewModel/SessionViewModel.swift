@@ -125,3 +125,38 @@ func cancelWaitingRequest(userId: String) async throws {
     try await docRef.delete()
 }
 
+
+// Creates a new pending session between two users and saves it to Firestore.
+func createPendingSession(
+    userID1: String,
+    userID2: String,
+    mode: Session.Mode
+) async throws -> Session {
+    
+    // Create a new session document with an auto-generated ID.
+    let ref = Firestore.firestore()
+        .collection("Sessions")
+        .document()
+    
+    // Get the current date and time.
+    let now = Date()
+    
+    // Create the session.
+    let session = Session(
+        id: ref.documentID,
+        participants: [userID1, userID2],
+        status: .pending,
+        acceptedBy: [],
+        mode: mode,
+        opponentType: .human,
+        startTime: Optional.none,
+        creaedAt: now
+    )
+    
+    // Save the session to Firestore.
+    try ref.setData(from: session)
+    
+    return session
+}
+
+
