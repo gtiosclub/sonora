@@ -54,3 +54,22 @@ func joinQueue(userID: String, mode: Session.Mode) async throws {
     ])
 }
 
+// Creates a new active session against the AI and saves it to the "Sessions" collection.
+// Returns the saved session.
+func createAISession(userId: String, mode: Session.Mode) async throws -> Session {
+    let ref = Firestore.firestore().collection("Sessions").document()  // new empty doc: Firestore picks the ID
+    let now = Date()
+    let session = Session(
+        id: ref.documentID,
+        participants: [userId],
+        status: .active,
+        acceptedBy: [userId],
+        mode: mode,
+        opponentType: .ai,
+        startTime: now,
+        creaedAt: now
+    )
+
+    try ref.setData(from: session)   // Dates are saved as Firestore timestamps
+    return session
+}

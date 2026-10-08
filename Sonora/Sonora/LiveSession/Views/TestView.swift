@@ -8,6 +8,7 @@ import SwiftUI
 
 struct TestView: View {
     @Environment(AuthManager.self) private var auth
+    @State private var output = "Tap a button to test"   // shows the result on screen
     var body: some View {
         VStack {
             Text("Testing View")
@@ -32,7 +33,22 @@ struct TestView: View {
                             print("Failed with error: \(error.localizedDescription)")
                         }
                     }
+            
             }
+            Button("Test Create AI Session") {
+                            Task {
+                                do {
+                                    let session = try await createAISession(userId: auth.currentUser?.id ?? "", mode: .interview)
+                                    output = "Created: \(session.id)"
+                                } catch {
+                                    output = "ERROR: \(error.localizedDescription)"
+                                }
+                            }
+                        }
+
+                        Text(output)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
         }
         .padding()
     }
