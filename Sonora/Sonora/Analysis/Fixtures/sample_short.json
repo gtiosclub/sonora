@@ -1,0 +1,10 @@
+{
+  "words": [
+    { "text": "Hello",    "start": 0.00, "end": 0.42, "confidence": 0.99 },
+    { "text": "everyone", "start": 0.48, "end": 1.02, "confidence": 0.97 },
+    { "text": "um",       "start": 1.30, "end": 1.55, "confidence": 0.88 },
+    { "text": "today",    "start": 1.90, "end": 2.25, "confidence": 0.98 },
+    { "text": "I'll",     "start": 2.28, "end": 2.45, "confidence": 0.95 },
+    { "text": "talk",     "start": 2.48, "end": 2.80, "confidence": 0.96 }
+  ]
+}
