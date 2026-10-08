@@ -26,4 +26,15 @@ enum UserService {
     static func updateLastLogin(userID: String, date: Date) async throws {
         try await users.document(userID).updateData(["lastLogin": Timestamp(date: date)])
     }
+
+    /// Returns nil if the user has no doc yet.
+    static func getStreak(userID: String) async throws -> Int? {
+        let snapshot = try await users.document(userID).getDocument()
+        guard snapshot.exists else { return nil }
+        return snapshot.get("streak") as? Int ?? 0
+    }
+
+    static func updateStreak(userID: String, streak: Int) async throws {
+        try await users.document(userID).updateData(["streak": streak])
+    }
 }
