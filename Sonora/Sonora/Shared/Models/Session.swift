@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import FirebaseFirestore
 
 struct Session: Identifiable, Codable, Equatable {
     var id: String
@@ -31,4 +32,11 @@ struct Session: Identifiable, Codable, Equatable {
     enum OpponentType: String, Codable {
         case human, ai
     }
+    
+}
+struct WaitingUser: Codable, Identifiable {
+    @DocumentID var id: String?
+    var userID: String
+    var mode: String
+    var joinedAt: Date?
 }
