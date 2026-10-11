@@ -159,4 +159,21 @@ func createPendingSession(
     return session
 }
 
+func inviteFriendToSession(
+    fromUserId: String,
+    toUserId: String,
+    mode: Session.Mode
+) async throws -> String {
 
+    let db = Firestore.firestore()
+
+    let documentRef = try await db.collection("Sessions")
+        .addDocument(data: [
+            "participants": [fromUserId, toUserId],
+            "acceptedBy": [fromUserId],
+            "mode": mode.rawValue,
+            "status": "pending"
+        ])
+
+    return documentRef.documentID
+}
