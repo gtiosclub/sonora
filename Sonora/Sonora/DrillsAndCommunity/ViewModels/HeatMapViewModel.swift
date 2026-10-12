@@ -9,24 +9,25 @@ import Foundation
 import Combine
 
 enum HeatMapMetric: String, CaseIterable, Identifiable {
-    case improvement = "Improvement"  // change vs. the previous session
     case score = "Score"              // raw 0-100 score
+    case improvement = "Improvement"  // change vs. the previous session
+
 
     var id: String { rawValue }
 }
 
 final class HeatMapViewModel: ObservableObject {
     @Published var sessionScores: [SessionSkillScore]
-    @Published var metric: HeatMapMetric = .improvement
+    @Published var metric: HeatMapMetric = .score
     @Published var lowestColor: RGBColor
     @Published var highestColor: RGBColor
 
-    let skills = Skill.allCases
+    let skills = ["Content", "Engagement", "Clarity", "Confidence"]
 
     var legendLabels: (low: String, high: String) {
         switch metric {
-        case .improvement: return ("Declined", "Improved")
         case .score: return ("Low", "High")
+        case .improvement: return ("Declined", "Improved")
         }
     }
     
@@ -69,17 +70,25 @@ final class HeatMapViewModel: ObservableObject {
         guard !sessions.isEmpty else { return [] }
 
         // 1. Raw numbers: one row per skill, one column per session
-        let values: [[Double]] = Skill.allCases.map { skill in
-            let scores = sessions.map { Double($0.value(for: skill)) }
+        let scoreRows: [[Double]] = [
+            sessions.map { Double($0.value(for: $0.content)) },
+            sessions.map { Double($0.value(for: $0.engagement)) },
+            sessions.map { Double($0.value(for: $0.clarity)) },
+            sessions.map { Double($0.value(for: $0.confidence)) }
+        ]
+
+        let values: [[Double]] = scoreRows.map { scores in
             switch metric {
             case .score:
                 return scores
+
             case .improvement:
-                // First session has nothing to compare to, so its change is 0
-                return scores.indices.map { i in i == 0 ? 0 : scores[i] - scores[i - 1] }
+                return scores.indices.map { i in
+                    i == 0 ? 0 : scores[i] - scores[i - 1]
+                }
             }
         }
-
+        
         // 2. Normalize each number to 0...1
         let normalized: [[Double]]
         switch metric {
@@ -101,6 +110,6 @@ final class HeatMapViewModel: ObservableObject {
 
     /// Sort oldest to newest and keep the latest 15.
     private static func prepare(_ sessions: [SessionSkillScore]) -> [SessionSkillScore] {
-        Array(sessions.sorted { $0.date < $1.date }.suffix(15))
+        Array(sessions.suffix(15))
     }
 }

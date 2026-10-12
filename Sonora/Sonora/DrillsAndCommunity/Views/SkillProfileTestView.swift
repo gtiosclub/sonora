@@ -72,3 +72,7 @@ struct SkillProfileTestView: View {
         }
     }
 }
+
+#Preview {
+    SkillProfileTestView()
+}

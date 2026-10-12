@@ -55,8 +55,8 @@ struct User: Codable, Equatable, Identifiable {
 extension User {
     /// A brand-new user with empty defaults. Used at sign up.
     static func makeNew(userId: String, username: String, email: String) -> User {
-        func emptySkill() -> SkillProfile.Skill {
-            SkillProfile.Skill(id: UUID().uuidString, summary: "")
+        func emptySkill() -> Skill {
+            Skill(id: UUID().uuidString, score: 50, summary: "")
         }
 
         return User(

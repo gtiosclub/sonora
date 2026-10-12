@@ -39,8 +39,8 @@ struct HeatMapView: View {
             HStack(alignment: .top, spacing: 8) {
                 // y-axis labels
                 VStack(spacing: gap) {
-                    ForEach(viewModel.skills) { skill in
-                        Text(skill.displayName)
+                    ForEach(viewModel.skills, id: \.self) { skill in
+                        Text(skill)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .frame(width: labelWidth, height: cellHeight, alignment: .trailing)
