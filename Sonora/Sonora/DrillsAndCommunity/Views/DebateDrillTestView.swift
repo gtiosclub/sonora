@@ -52,3 +52,7 @@ struct DebateDrillTestView: View {
         results.insert(result, at: 0)
     }
 }
+
+#Preview {
+    DebateDrillTestView()
+}
