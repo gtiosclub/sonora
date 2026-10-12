@@ -21,6 +21,7 @@ enum SkillProfileService {
     // Get User's SkillProfile from Firebase
     static func fetch(for userId: String) async throws -> SkillProfile? {
         let snapshot = try await profiles.document(userId).getDocument()
+        print("here")
         guard snapshot.exists else { return nil }
         return try snapshot.data(as: SkillProfile.self)
     }
