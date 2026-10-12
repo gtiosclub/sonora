@@ -21,6 +21,7 @@ enum DebateSessions {
         createdAt: date(month: 1, day: 01),
         durationSeconds: 600,
         topic: .technology,
+        sessionSkillScore: SessionSkillScore(id: "debate1", userId: "user1", content: Skill(id: "debate1-content", score: 90, summary: ""), engagement: Skill(id: "debate1-content", score: 64, summary: ""), clarity: Skill(id: "debate1-content", score: 85, summary: ""), confidence: Skill(id: "debate1-content", score: 55, summary: "")),
         summary: "argues that early social media harms young teen mental health. statistically sound argument, but failed to summarize their argument and provide a closing statement",
         prompt: "social media does more harm than good.",
         scores: [72, 58, 64, 70]
@@ -41,7 +42,7 @@ enum DebateSessions {
             duration: 60,
             successCriteria: "",
             results: "",
-            skill: SkillProfile.Skill(id: "content", summary: ""),
+            skill: Skill(id: "content", score: 65, summary: ""),
             subSkill: "",
             improvement: 0,
             difficulty: "medium",

@@ -20,7 +20,7 @@ struct Session: Identifiable, Codable, Equatable {
 
     var durationSeconds: Int?
     var topic: Topics?
-    var skillImprovement: SkillImprovement?
+    var sessionSkillScore: SessionSkillScore
     var summary: String?
     var prompt: String?
     var analysis: String?
@@ -38,3 +38,7 @@ struct Session: Identifiable, Codable, Equatable {
         case human, ai
     }
 }
+
+
+
+

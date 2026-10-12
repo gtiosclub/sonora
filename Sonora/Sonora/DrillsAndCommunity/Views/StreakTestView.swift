@@ -55,3 +55,7 @@ struct StreakTestView: View {
         }
     }
 }
+
+#Preview {
+    StreakTestView()
+}

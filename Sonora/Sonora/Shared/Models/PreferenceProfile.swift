@@ -11,10 +11,9 @@ struct PreferenceProfile: Identifiable, Equatable, Codable {
     var id: String
     var userId: String
 
-    var practiceLength: PracticeLength
-    var difficulty: Difficulty
-    var topics: [String]
-    var feedbackStyle: FeedbackStyle
+    var practiceLength: PracticeLength //preferred practice length
+    var difficulty: Difficulty //preferred difficulty level
+    var feedbackStyle: FeedbackStyle //preferred feedback style
 
     enum PracticeLength: String, Codable {
         case short

@@ -9,9 +9,11 @@ import SwiftUI
 
 @MainActor
 enum InterviewSessions {
-    static let interviewSession1 = Session {
+    static let interviewSession1: Session = {
         Session(id: "interview1",
-                userId1: "user1",
+                participants: ["user1"],
+                status: Session.Status.completed,
+                acceptedBy: ["user1"],
                 mode: Session.Mode.interview,
                 opponentType: Session.OpponentType.ai,
                 startTime: Calendar(identifier: .gregorian).date(
@@ -24,12 +26,16 @@ enum InterviewSessions {
                         minute: 0
                     )
                 )!,
-                durationSeconds: 600)
-    }
+                createdAt: Date(),
+                durationSeconds: 600,
+                sessionSkillScore: SessionSkillScore(id: "interview1", userId: "user1", content: Skill(id: "interview1-content", score: 55, summary: ""), engagement: Skill(id: "interview1-content", score: 58, summary: ""), clarity: Skill(id: "interview1-content", score: 81, summary: ""), confidence: Skill(id: "interview1-content", score: 89, summary: "")))
+    }()
     
-    static let interviewSession2 = Session {
+    static let interviewSession2: Session = {
         Session(id: "interview2",
-                userId1: "user1",
+                participants: ["user1"],
+                status: Session.Status.completed,
+                acceptedBy: ["user1"],
                 mode: Session.Mode.interview,
                 opponentType: Session.OpponentType.ai,
                 startTime: Calendar(identifier: .gregorian).date(
@@ -42,12 +48,16 @@ enum InterviewSessions {
                         minute: 0
                     )
                 )!,
-                durationSeconds:700)
-    }
+                createdAt: Date(),
+                durationSeconds:700,
+                sessionSkillScore: SessionSkillScore(id: "interview2", userId: "user1", content: Skill(id: "interview2-content", score: 90, summary: ""), engagement: Skill(id: "interview2-content", score: 64, summary: ""), clarity: Skill(id: "interview2-content", score: 85, summary: ""), confidence: Skill(id: "interview2-content", score: 55, summary: "")))
+    }()
     
-    static let interviewSession3 = Session {
+    static let interviewSession3: Session = {
         Session(id: "interview3",
-                userId1: "user1",
+                participants: ["user1"],
+                status: Session.Status.completed,
+                acceptedBy: ["user1"],
                 mode: Session.Mode.interview,
                 opponentType: Session.OpponentType.ai,
                 startTime: Calendar(identifier: .gregorian).date(
@@ -60,12 +70,16 @@ enum InterviewSessions {
                         minute: 0
                     )
                 )!,
-                durationSeconds: 500)
-    }
+                createdAt: Date(),
+                durationSeconds: 500,
+                sessionSkillScore: SessionSkillScore(id: "interview3", userId: "user1", content: Skill(id: "interview3-content", score: 77, summary: ""), engagement: Skill(id: "interview3-content", score: 66, summary: ""), clarity: Skill(id: "interview3-content", score: 55, summary: ""), confidence: Skill(id: "interview3-content", score: 44, summary: "")))
+    }()
     
-    static let interviewSession4 = Session {
+    static let interviewSession4: Session = {
         Session(id: "interview4",
-                userId1: "user1",
+                participants: ["user1"],
+                status: Session.Status.completed,
+                acceptedBy: ["user1"],
                 mode: Session.Mode.interview,
                 opponentType: Session.OpponentType.human,
                 startTime: Calendar(identifier: .gregorian).date(
@@ -78,12 +92,16 @@ enum InterviewSessions {
                         minute: 0
                     )
                 )!,
-                durationSeconds: 800)
-    }
+                createdAt: Date(),
+                durationSeconds: 800,
+                sessionSkillScore: SessionSkillScore(id: "interview4", userId: "user1", content: Skill(id: "interview4-content", score: 21, summary: ""), engagement: Skill(id: "interview4-content", score: 76, summary: ""), clarity: Skill(id: "interview4-content", score: 94, summary: ""), confidence: Skill(id: "interview4-content", score: 99, summary: "")))
+    }()
     
-    static let interviewSession5 = Session {
+    static let interviewSession5: Session = {
         Session(id: "interview5",
-                userId1: "user1",
+                participants: ["user1"],
+                status: Session.Status.completed,
+                acceptedBy: ["user1"],
                 mode: Session.Mode.interview,
                 opponentType: Session.OpponentType.human,
                 startTime: Calendar(identifier: .gregorian).date(
@@ -96,6 +114,8 @@ enum InterviewSessions {
                         minute: 0
                     )
                 )!,
-                durationSeconds: 900)
-    }
+                createdAt: Date(),
+                durationSeconds: 900,
+                sessionSkillScore: SessionSkillScore(id: "interview5", userId: "user1", content: Skill(id: "interview5-content", score: 65, summary: ""), engagement: Skill(id: "interview5-content", score: 70, summary: ""), clarity: Skill(id: "interview5-content", score: 61, summary: ""), confidence: Skill(id: "interview5-content", score: 45, summary: "")))
+    }()
 }
