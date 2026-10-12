@@ -28,6 +28,16 @@ struct TestView: View {
                     }
                 }
             }
+            
+            Button("Test Create Session with Friend") {
+                Task {
+                    do {
+                        try await inviteFriendToSession(fromUserId: auth.currentUser?.id ?? "", toUserId: "friend-user", mode: Session.Mode.debate)
+                    } catch {
+                        print("Failed with error: \(error.localizedDescription)")
+                    }
+                }
+            }
 
 
             // Ticket 1: looks for a waiting user in .interview mode
