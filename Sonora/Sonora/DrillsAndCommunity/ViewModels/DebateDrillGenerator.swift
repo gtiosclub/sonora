@@ -63,8 +63,8 @@ enum DebateDrillPromptText {
         if let summary = debate.summary {
             lines.append("Summary: \(summary)")
         }
-        if let scores = debate.scores, scores.count == 4 {
-            lines.append("Scores: content \(scores[0]), clarity \(scores[1]), confidence \(scores[2]), engagement \(scores[3])")
+        if let skills = debate.sessionSkillScore {
+            lines.append("Scores: content \(skills.content.score), clarity \(skills.clarity.score), confidence \(skills.confidence.score), engagement \(skills.engagement.score)")
         }
         lines.append("Drills:")
         lines += DrillTaskType.allCases.map { "- \($0.rawValue): \($0.instruction)" }
@@ -112,9 +112,12 @@ enum DebateDrillGenerator {
     static let requiredSessions = 5
 
     static func generate(lastDebates: [Session], previousDrills: [Drill], writer: (any DrillContextWriter)? = nil) async -> DebateDrillPrompt {
-        let writer = writer ?? AppleDrillContextWriter()
         let debates = Array(lastDebates.filter { $0.mode == .debate }.prefix(requiredSessions))
-        let debate = debates.randomElement()
+        return await generate(for: debates.randomElement(), writer: writer, needsMoreSessions: debates.count < requiredSessions)
+    }
+
+    static func generate(for debate: Session?, writer: (any DrillContextWriter)? = nil, needsMoreSessions: Bool = false) async -> DebateDrillPrompt {
+        let writer = writer ?? AppleDrillContextWriter()
 
         let result: GeneratedDebateDrill
         do {
@@ -138,7 +141,7 @@ enum DebateDrillGenerator {
             drillContext: "\(tidy(result.feedback)) \(tidy(result.assignment))",
             sessionId: debate?.id,
             taskType: result.taskType,
-            needsMoreSessions: debates.count < requiredSessions
+            needsMoreSessions: needsMoreSessions
         )
     }
 }
