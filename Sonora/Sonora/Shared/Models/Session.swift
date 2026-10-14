@@ -21,7 +21,7 @@ struct Session: Identifiable, Codable, Equatable {
 
     var durationSeconds: Int?
     var topic: Topics?
-    var sessionSkillScore: SessionSkillScore
+    var sessionSkillScore: SessionSkillScore?
     var summary: String?
     var prompt: String?
     var analysis: String?
