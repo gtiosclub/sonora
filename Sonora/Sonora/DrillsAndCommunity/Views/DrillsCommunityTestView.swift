@@ -28,7 +28,7 @@ struct DrillsCommunityTestView: View {
         Text(skillProfile?.content.summary ?? "No Data")
         Text(skillProfile?.confidence.summary ?? "No Data")
         Text(skillProfile?.engaging.summary ?? "No Data")
-        NavigationLink("Debate Drill Test") { DebateDrillTestView() }
+        NavigationLink("Debate Drill Test") { DebateDrillListView() }
 
 
     }
