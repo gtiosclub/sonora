@@ -95,7 +95,7 @@ func createAISession(userId: String, mode: Session.Mode) async throws -> Session
         mode: mode,
         opponentType: .ai,
         startTime: now,
-        creaedAt: now
+        createdAt: now
     )
 
     try ref.setData(from: session)   // Dates are saved as Firestore timestamps
@@ -150,7 +150,7 @@ func createPendingSession(
         mode: mode,
         opponentType: .human,
         startTime: Optional.none,
-        creaedAt: now
+        createdAt: now
     )
     
     // Save the session to Firestore.
