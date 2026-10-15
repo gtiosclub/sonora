@@ -14,6 +14,27 @@ struct PreferenceProfile: Identifiable, Equatable, Codable {
     // MARK: MANDATORY
     
     // ADD preferences here
+
+    var practiceLength: PracticeLength //preferred practice length
+    var difficulty: Difficulty //preferred difficulty level
+    var feedbackStyle: FeedbackStyle //preferred feedback style
+
+    enum PracticeLength: String, Codable {
+        case short
+        case medium
+        case long
+    }
+
+    enum Difficulty: String, Codable {
+        case easy
+        case moderate
+        case challenging
+    }
+
+    enum FeedbackStyle: String, Codable {
+        case detailed
+        case highLevel
+    }
     
     //OPTIONAL: store topics that the user like
     var goodTopics : [Topics]

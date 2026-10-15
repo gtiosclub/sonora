@@ -95,7 +95,7 @@ func createAISession(userId: String, mode: Session.Mode) async throws -> Session
         mode: mode,
         opponentType: .ai,
         startTime: now,
-        creaedAt: now
+        createdAt: now
     )
 
     try ref.setData(from: session)   // Dates are saved as Firestore timestamps
@@ -150,7 +150,7 @@ func createPendingSession(
         mode: mode,
         opponentType: .human,
         startTime: Optional.none,
-        creaedAt: now
+        createdAt: now
     )
     
     // Save the session to Firestore.
@@ -159,4 +159,21 @@ func createPendingSession(
     return session
 }
 
+func inviteFriendToSession(
+    fromUserId: String,
+    toUserId: String,
+    mode: Session.Mode
+) async throws -> String {
 
+    let db = Firestore.firestore()
+
+    let documentRef = try await db.collection("Sessions")
+        .addDocument(data: [
+            "participants": [fromUserId, toUserId],
+            "acceptedBy": [fromUserId],
+            "mode": mode.rawValue,
+            "status": "pending"
+        ])
+
+    return documentRef.documentID
+}

@@ -13,12 +13,14 @@ struct BodyPoseDetector {
     /// Joints below this confidence are skipped.
     private let minimumConfidence: Double = 0.3
 
-    /// The only joints we keep: shoulders and wrists.
+    /// Joints we keep: shoulders, wrists, nose, and neck.
     private let jointsToKeep: [(name: String, joint: VNHumanBodyPoseObservation.JointName)] = [
         ("leftShoulder", .leftShoulder),
         ("rightShoulder", .rightShoulder),
         ("leftWrist", .leftWrist),
-        ("rightWrist", .rightWrist)
+        ("rightWrist", .rightWrist),
+        ("nose", .nose),
+        ("neck", .neck)
     ]
 
     /// Finds a person in the frame and returns their shoulders and wrists.
