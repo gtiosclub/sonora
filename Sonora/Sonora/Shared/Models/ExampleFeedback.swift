@@ -9,12 +9,13 @@ import Foundation
 
 let exampleSession = Session(
     id: "session1",
-    userId1: "user1",
-    userId2: nil,
-    AIOpponent: nil,
+    participants: ["user1"],
+    status: .completed,
+    acceptedBy: ["user1"],
     mode: .interview,
     opponentType: .ai,
     startTime: Date(),
+    createdAt: Date(),
     durationSeconds: 402
 )
 

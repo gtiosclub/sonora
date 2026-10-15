@@ -33,8 +33,8 @@ final class SessionFeedbackViewModel {
 
     // MARK: - Header
     var subtitle: String {
-        let minutes = session.durationSeconds / 60
-        let seconds = session.durationSeconds % 60
+        let minutes = durationSeconds / 60
+        let seconds = durationSeconds % 60
         return "\(session.mode.rawValue.capitalized) · \(minutes) min \(seconds) sec"
     }
 
@@ -72,7 +72,7 @@ final class SessionFeedbackViewModel {
     var postureText: String { "\(Int((feedback.posture * 100).rounded()))%" }
 
     // MARK: - Moments
-    var durationSeconds: Int { session.durationSeconds }
+    var durationSeconds: Int { session.durationSeconds ?? 0 }
     var featuredMoment: ReviewMoment? { feedback.moments.first }
 
     func timestamp(for moment: ReviewMoment) -> String {
