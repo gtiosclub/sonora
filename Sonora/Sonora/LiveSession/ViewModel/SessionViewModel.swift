@@ -68,19 +68,36 @@ func declineSession(userId: String, sessionID:String) async throws{
 
 
 
-func joinQueue(userId: String, mode: Session.Mode) async throws {
+func joinQueue(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws {
     // Creates firestore object
     let db = Firestore.firestore()
     
     // .document(userID) sets the document name to match the userID
     let docRef = db.collection("WaitingUsers").document(userId)
     
-    // Adds document to "Waiting users"
-    try await docRef.setData([
-        "userId": userId,
-        "mode": mode.rawValue
-    ])
+    // Debate users must select a topic
+    if mode == .debate && topic == nil {
+        throw JoinQueueError.missingDebateTopic
+    }
+    
+    var data: [String: Any] = [
+            "userID": userId,
+            "mode": mode.rawValue,
+            "joinedAt": Timestamp(date: Date())
+        ]
+    // Save the selected debate topic when provided
+    if let topic = topic, mode == .debate {
+        data["topic"] = topic.rawValue
+    }
+
+    try await docRef.setData(data)
 }
+
+    enum JoinQueueError: Error {
+        case missingDebateTopic
+    }
+    
+
 
 // Creates a new active session against the AI and saves it to the "Sessions" collection.
 // Returns the saved session.
@@ -102,14 +119,28 @@ func createAISession(userId: String, mode: Session.Mode) async throws -> Session
     return session
 }
 // Finds one user waiting in the same mode, or returns nil if there isn't one
-func findWaitingMatch(mode: Session.Mode) async throws -> WaitingUser? {
-    let snapshot = try await Firestore.firestore()
+func findWaitingMatch(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> WaitingUser? {
+    // Debate users must select a topic
+    if mode == .debate && topic == nil {
+        throw JoinQueueError.missingDebateTopic
+    }
+    
+        // Find users waiting in the same mode
+    var query: Query = Firestore.firestore()
         .collection("WaitingUsers")
         .whereField("mode", isEqualTo: mode.rawValue)
-        .limit(to: 1)
-        .getDocuments()
 
-    guard let document = snapshot.documents.first else { return nil }
+        // For debates, also require the same topic
+    if mode == .debate, let topic = topic {
+        query = query.whereField("topic", isEqualTo: topic.rawValue)
+    }
+
+    let snapshot = try await query.getDocuments()
+    guard let document = snapshot.documents.first(where: {
+        $0.documentID != userId
+    }) else {
+        return nil
+    }
     return try document.data(as: WaitingUser.self)
 }
 
@@ -130,8 +161,13 @@ func cancelWaitingRequest(userId: String) async throws {
 func createPendingSession(
     userID1: String,
     userID2: String,
-    mode: Session.Mode
+    mode: Session.Mode,
+    topic: DebateTopic? = nil
 ) async throws -> Session {
+    // Debate sessions must have a selected topic
+    if mode == .debate && topic == nil {
+        throw JoinQueueError.missingDebateTopic
+    }
     
     // Create a new session document with an auto-generated ID.
     let ref = Firestore.firestore()
@@ -142,7 +178,7 @@ func createPendingSession(
     let now = Date()
     
     // Create the session.
-    let session = Session(
+    var session = Session(
         id: ref.documentID,
         participants: [userID1, userID2],
         status: .pending,
@@ -152,6 +188,10 @@ func createPendingSession(
         startTime: Optional.none,
         createdAt: now
     )
+    // Save the selected debate question on the session
+    if mode == .debate, let topic = topic {
+        session.prompt = topic.question
+    }
     
     // Save the session to Firestore.
     try ref.setData(from: session)

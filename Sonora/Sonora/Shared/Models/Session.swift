@@ -45,6 +45,7 @@ struct WaitingUser: Codable, Identifiable {
     var userID: String
     var mode: String
     var joinedAt: Date?
+    var topic: DebateTopic?
 }
 
 
