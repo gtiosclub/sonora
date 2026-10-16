@@ -33,8 +33,8 @@ final class HeatMapViewModel: ObservableObject {
     
     init(
         sessionScores: [SessionSkillScore] = [],
-        lowestColor: RGBColor = RGBColor(red: 0.55, green: 0.63, blue: 1.00),
-        highestColor: RGBColor = RGBColor(red: 1.00, green: 0.70, blue: 0.25)
+        lowestColor: RGBColor = RGBColor(red: 0.85, green: 0.93, blue: 0.97),
+        highestColor: RGBColor = RGBColor(red: 0.16, green: 0.45, blue: 0.62)
     ) {
         self.sessionScores = sessionScores
         self.lowestColor = lowestColor
