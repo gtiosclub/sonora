@@ -9,12 +9,12 @@ enum DeepgramError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingAPIKey:
-            return "No Deepgram API key set. Add your key to Shared/Secrets.swift."
+            return "No Deepgram API key set. Add DEEPGRAM_API_KEY to Shared/Secrets.plist."
         case .invalidResponse:
             return "Deepgram returned a response the app couldn't read."
         case .httpStatus(let code, let body):
             if code == 401 || code == 403 {
-                return "Deepgram rejected the API key (HTTP \(code)). Check Secrets.swift."
+                return "Deepgram rejected the API key (HTTP \(code)). Check Secrets.plist."
             }
             return "Deepgram request failed (HTTP \(code)): \(body.prefix(200))"
         case .network(let err):
@@ -34,13 +34,14 @@ struct DeepgramTranscriptionService {
 
     /// Sends the audio file to Deepgram and returns the raw JSON response data.
     func transcribe(fileURL: URL) async throws -> Data {
-        guard !apiKey.isEmpty, apiKey != "PASTE_YOUR_DEEPGRAM_KEY_HERE" else {
+        guard !apiKey.isEmpty else {
             throw DeepgramError.missingAPIKey
         }
 
         var components = URLComponents(string: "https://api.deepgram.com/v1/listen")!
         // Keep these in sync with your Week 1 curl command.
         components.queryItems = [
+            URLQueryItem(name: "model", value: "nova-3"),
             URLQueryItem(name: "filler_words", value: "true")
         ]
 
