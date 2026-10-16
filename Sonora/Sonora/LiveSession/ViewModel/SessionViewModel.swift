@@ -162,7 +162,7 @@ func createPendingSession(
 
 func requestRandomMatch(userId: String, mode: Session.Mode) async throws -> Session? {
     // Unwraps waitingUser object
-    if let matchedUser = try await findWaitingMatch(mode: mode) {
+    if let matchedUser = try await findWaitingMatch(userId: userId,  mode: mode) {
         guard matchedUser.userID != userId else {
             try await joinQueue(userId: userId, mode: mode)
             return nil
