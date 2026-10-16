@@ -77,8 +77,9 @@ func joinQueue(userId: String, mode: Session.Mode) async throws {
     
     // Adds document to "Waiting users"
     try await docRef.setData([
-        "userId": userId,
-        "mode": mode.rawValue
+        "userID": userId,
+        "mode": mode.rawValue,
+        "joinedAt": Date()
     ])
 }
 
@@ -162,6 +163,10 @@ func createPendingSession(
 func requestRandomMatch(userId: String, mode: Session.Mode) async throws -> Session? {
     // Unwraps waitingUser object
     if let matchedUser = try await findWaitingMatch(mode: mode) {
+        guard matchedUser.userID != userId else {
+            try await joinQueue(userId: userId, mode: mode)
+            return nil
+        }
         // Remove the exact matched queue document before creating the session.
         try await cancelWaitingRequest(userId: matchedUser.id ?? matchedUser.userID)
         
@@ -176,22 +181,24 @@ func requestRandomMatch(userId: String, mode: Session.Mode) async throws -> Sess
         try await joinQueue(userId: userId, mode: mode)
         return nil
     }
-  
-func inviteFriendToSession(
-    fromUserId: String,
-    toUserId: String,
-    mode: Session.Mode
-) async throws -> String {
-
-    let db = Firestore.firestore()
-
-    let documentRef = try await db.collection("Sessions")
-        .addDocument(data: [
-            "participants": [fromUserId, toUserId],
-            "acceptedBy": [fromUserId],
-            "mode": mode.rawValue,
-            "status": "pending"
-        ])
-
-    return documentRef.documentID
 }
+    
+func inviteFriendToSession(
+        fromUserId: String,
+        toUserId: String,
+        mode: Session.Mode
+    ) async throws -> String {
+        
+        let db = Firestore.firestore()
+        
+        let documentRef = try await db.collection("Sessions")
+            .addDocument(data: [
+                "participants": [fromUserId, toUserId],
+                "acceptedBy": [fromUserId],
+                "mode": mode.rawValue,
+                "status": "pending"
+            ])
+        
+        return documentRef.documentID
+}
+
