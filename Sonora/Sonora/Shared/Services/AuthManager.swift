@@ -50,7 +50,7 @@ final class AuthManager {
 
         let newUser = User.makeNew(userId: uid, username: username, email: email)
         let newSkillProfile = SkillProfile.makeNew(userId: uid)
-        let newPreferenceProfile = PreferenceProfile(id: uid, userId: uid, goodTopics: [], badTopics: [], modes: [])
+        let newPreferenceProfile = PreferenceProfile(id: uid, userId: uid, practiceLength: PreferenceProfile.PracticeLength.short, difficulty: PreferenceProfile.Difficulty.challenging, feedbackStyle: PreferenceProfile.FeedbackStyle.detailed, goodTopics: [], badTopics: [], modes: [])
 
         let db = Firestore.firestore()
         let batch = db.batch()

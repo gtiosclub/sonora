@@ -71,3 +71,4 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 Sonora/Sonora/Shared/Secrets.plist
+.DS_Store
