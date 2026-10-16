@@ -177,3 +177,48 @@ func inviteFriendToSession(
 
     return documentRef.documentID
 }
+
+// Validates that a session with that session id exists and is currently active
+// Sets the status of that function to completed
+// Populates end time and sets duration in seconds
+func completeSession(sessionID: String) async throws{
+    //access firestore
+    let db = Firestore.firestore()
+    
+    // Get the session document using its ID
+    let sessionRef = db.collection("Sessions").document(sessionID)
+    let document = try await sessionRef.getDocument()
+    
+    // check to make sure the session exists
+    guard document.exists else{
+        return
+    }
+    
+    // stores the status of the session
+    let status = document.get("status") as? String
+    
+    // check to make sure that session is active
+    guard status == "active" else{
+        return
+    }
+    
+    // sets status to completed
+    try await sessionRef.updateData(["status" : "completed"])
+    
+    // stores the start time of the session
+    let startTime = document.get("startTime") as? Timestamp
+    
+    // stores the start time as a Date
+    guard let startDate = startTime?.dateValue() else { return }
+    
+    // stores the end time of the session
+    let endDate = Date.now
+    
+    // stores the elapsed time of the session
+    let elapsedTime = endDate.timeIntervalSince(startDate)
+    
+    // populates end time and sets duration in seconds
+    try await
+        sessionRef.updateData(["durationSeconds" : elapsedTime])
+}
+
