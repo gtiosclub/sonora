@@ -15,7 +15,8 @@ struct FaceDetector {
         guard let cgImage = image.cgImage else { return nil }
 
         // Ask Vision to look for a face, and tell it which way the photo is rotated
-        let request = VNDetectFaceLandmarksRequest()
+        let request = VNDetectFaceRectanglesRequest()
+        request.revision = VNDetectFaceRectanglesRequestRevision3
         let handler = VNImageRequestHandler(cgImage: cgImage, orientation: visionOrientation(of: image))
         try handler.perform([request])
 
