@@ -11,6 +11,7 @@ struct TestView: View {
     @Environment(AuthManager.self) private var auth
     @State private var output = "Tap a button to test"   // shows the result on screen
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
+    @State private var randomMatchOutput = "Tap random match button to test"
 
     var body: some View {
         VStack {
@@ -61,6 +62,32 @@ struct TestView: View {
             Text(output)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            Button ("Test Request Random Match") {
+                Task {
+                    let userID = auth.currentUser?.id ?? ""
+
+                    do {
+                        let session = try await requestRandomMatch(
+                            userId: userID,
+                            mode: .interview
+                        )
+
+                        if let session {
+                            let opponentID = session.participants.first { $0 != userID } ?? "unknown"
+                            randomMatchOutput = "Matched! Session: \(session.id)\nOpponent: \(opponentID)"
+                        } else {
+                            randomMatchOutput = "No match yet — added to the interview queue."
+                        }
+                    } catch {
+                        randomMatchOutput = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
+            Text(randomMatchOutput)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            
             Button("Test Join Wait Queue") {
                 Task {
                         do {

@@ -148,7 +148,7 @@ func cancelWaitingRequest(userId: String) async throws {
     // Creates firestore object
     let db = Firestore.firestore()
     
-    // Sets reference variable docRef to the document that needs to be deleted
+    // The queue document ID is the user's ID.
     let docRef = db.collection("WaitingUsers").document(userId)
     
     // Deletes document
@@ -199,21 +199,45 @@ func createPendingSession(
     return session
 }
 
-func inviteFriendToSession(
-    fromUserId: String,
-    toUserId: String,
-    mode: Session.Mode
-) async throws -> String {
-
-    let db = Firestore.firestore()
-
-    let documentRef = try await db.collection("Sessions")
-        .addDocument(data: [
-            "participants": [fromUserId, toUserId],
-            "acceptedBy": [fromUserId],
-            "mode": mode.rawValue,
-            "status": "pending"
-        ])
-
-    return documentRef.documentID
+func requestRandomMatch(userId: String, mode: Session.Mode) async throws -> Session? {
+    // Unwraps waitingUser object
+    if let matchedUser = try await findWaitingMatch(mode: mode) {
+        guard matchedUser.userID != userId else {
+            try await joinQueue(userId: userId, mode: mode)
+            return nil
+        }
+        // Remove the exact matched queue document before creating the session.
+        try await cancelWaitingRequest(userId: matchedUser.id ?? matchedUser.userID)
+        
+        // Creates a new session
+        let session = try await createPendingSession(
+            userID1: matchedUser.userID,
+            userID2: userId,
+            mode: mode)
+        return session
+    } else {
+        // Adds user to queue if nil is unwrapped
+        try await joinQueue(userId: userId, mode: mode)
+        return nil
+    }
 }
+    
+func inviteFriendToSession(
+        fromUserId: String,
+        toUserId: String,
+        mode: Session.Mode
+    ) async throws -> String {
+        
+        let db = Firestore.firestore()
+        
+        let documentRef = try await db.collection("Sessions")
+            .addDocument(data: [
+                "participants": [fromUserId, toUserId],
+                "acceptedBy": [fromUserId],
+                "mode": mode.rawValue,
+                "status": "pending"
+            ])
+        
+        return documentRef.documentID
+}
+
