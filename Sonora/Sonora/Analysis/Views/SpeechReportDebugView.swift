@@ -43,7 +43,6 @@ struct SpeechReportDebugView: View {
         }
     }
 
-    /// 1.30 s -> "0:01.30"
     static func timestamp(_ seconds: TimeInterval) -> String {
         let minutes = Int(seconds) / 60
         let secs = seconds - Double(minutes * 60)
