@@ -16,12 +16,16 @@ struct SonoraApp: App {
         FirebaseApp.configure()
         _auth = State(initialValue: AuthManager())
     }
-
-    
+    private let transcript = try! MockTranscriptionService().loadTranscript(fromFixture: "sample_short")
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .environment(auth)
+            NavigationStack {
+                SessionFeedbackView(
+                    feedback: .sample,
+                    transcript: transcript,
+                    report: SpeechReportBuilder().buildReport(from: transcript)
+                )
+            }
         }
     }
 }
