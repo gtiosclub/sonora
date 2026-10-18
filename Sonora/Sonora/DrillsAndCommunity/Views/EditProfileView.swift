@@ -55,7 +55,6 @@ struct EditProfileView: View {
                 Button("SAVE") {
                     Task {
                         await viewModel.save()
-                        if viewModel.didSave { dismiss() }
                     }
                 }
                 .buttonStyle(ChunkyButtonStyle())
