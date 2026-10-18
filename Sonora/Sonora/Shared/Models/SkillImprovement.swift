@@ -13,7 +13,7 @@ struct SkillImprovement: Identifiable, Equatable, Codable {
     var id: String
     var userID: String
     
-    var Skill: SkillProfile.Skill
+    var Skill: Skill
     var improvement: Int
     var SkillSummary: String
 
