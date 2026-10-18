@@ -71,9 +71,11 @@ extension Color {
 
 struct SessionFeedbackView: View {
     let feedback: SessionFeedback
+    var transcript: Transcript = Transcript(words: [])
+    var report: AnalysisReport = SpeechReportBuilder().buildReport(from: Transcript(words: []))
+    var videoURL: URL? = nil
     var onReviewMoment: () -> Void = {}
-    var onSeeTranscriptPlayback: () -> Void = {}
-
+    @State private var showTranscript = false
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
@@ -104,6 +106,8 @@ struct SessionFeedbackView: View {
                     )
                     .ignoresSafeArea(edges: .bottom)
                 )
+        } .navigationDestination(isPresented: $showTranscript) {
+            SessionTranscriptView(transcript: transcript, report: report, videoURL: videoURL)
         }
     }
 
@@ -228,7 +232,7 @@ struct SessionFeedbackView: View {
     // MARK: Buttons
 
     private var transcriptPlaybackButton: some View {
-        Button(action: onSeeTranscriptPlayback) {
+        Button { showTranscript = true } label: {
             Text("See transcript playback")
                 .font(.system(size: 16, weight: .semibold))
                 .frame(maxWidth: .infinity)
