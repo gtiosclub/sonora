@@ -23,7 +23,7 @@ let exampleUserProfile = UserProfile(
     bio: "I love Webtoons",
     totalSessions: 24,
     totalSpeakingSeconds: 12_600,   // 3.5h
-    masteredTopics: ["Clarity", "Content"],
-    challengingTopics: ["Confidence", "Engaging", "Eye Contact"],
-    modes: ["Debate", "Lecture"]
+    masteredTopics: ["Conservacy", "Agriculture"],
+    challengingTopics: ["AI and Technology", "GMOs"],
+    modes: ["Debate", "Presentation"]
 )
