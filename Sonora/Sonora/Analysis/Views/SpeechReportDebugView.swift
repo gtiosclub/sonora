@@ -3,15 +3,39 @@ import SwiftUI
 struct SpeechReportDebugView: View {
 
     @State private var report: AnalysisReport?
+    @State private var status: String?
     @State private var errorMessage: String?
+    @State private var isWorking = false
 
     var body: some View {
         List {
-            if let errorMessage {
-                Text(errorMessage).foregroundStyle(.red)
+            Section {
+                Button("Analyze sample video") {
+                    Task { await analyzeSampleVideo() }
+                }
+                Button("Use saved transcript") {
+                    loadSavedTranscript()
+                }
             }
+            .disabled(isWorking)
+
+            if let status {
+                Section {
+                    HStack {
+                        ProgressView()
+                        Text(status)
+                    }
+                }
+            }
+
+            if let errorMessage {
+                Section {
+                    Text(errorMessage).foregroundStyle(.red)
+                }
+            }
+
             if let report {
-                Section("sample_short – Metrics (\(report.metrics.count))") {
+                Section("Metrics (\(report.metrics.count))") {
                     ForEach(Array(report.metrics.enumerated()), id: \.offset) { _, m in
                         HStack {
                             Text(m.name)
@@ -20,7 +44,7 @@ struct SpeechReportDebugView: View {
                         }
                     }
                 }
-                Section("sample_short – Findings (\(report.findings.count))") {
+                Section("Findings (\(report.findings.count))") {
                     ForEach(Array(report.findings.enumerated()), id: \.offset) { _, f in
                         HStack {
                             Text(Self.timestamp(f.start)).monospacedDigit()
@@ -31,15 +55,52 @@ struct SpeechReportDebugView: View {
             }
         }
         .navigationTitle("Speech Report")
-        .onAppear(perform: load)
     }
 
-    private func load() {
+    /// Runs the real pipeline on the bundled sample video, surfacing each step and any error.
+    @MainActor
+    private func analyzeSampleVideo() async {
+        isWorking = true
+        report = nil
+        errorMessage = nil
+        status = nil
+        defer {
+            isWorking = false
+            status = nil
+        }
+
+        // Fixtures must be in the app target's "Copy Bundle Resources".
+        guard let videoURL = Bundle.main.url(forResource: "filler_words_testing", withExtension: "MOV") else {
+            errorMessage = "Couldn't find filler_words_testing.MOV in the app bundle."
+            return
+        }
+
         do {
-            let transcript = try MockTranscriptionService().loadTranscript(fromFixture: "sample_short")
+            report = try await SpeechPipeline().analyze(videoURL: videoURL) { step in
+                status = step.rawValue
+            }
+        } catch {
+            errorMessage = "Analysis failed: \(error.localizedDescription)"
+        }
+    }
+
+    /// Demo backup: build the report from a saved Deepgram response with no network.
+    private func loadSavedTranscript() {
+        report = nil
+        status = nil
+        errorMessage = nil
+
+        guard let url = Bundle.main.url(forResource: "deepgram_fillers_on", withExtension: "json") else {
+            errorMessage = "Couldn't find deepgram_fillers_on.json in the app bundle."
+            return
+        }
+
+        do {
+            let data = try Data(contentsOf: url)
+            let transcript = try DeepgramDecoder().decode(data)
             report = SpeechReportBuilder().buildReport(from: transcript)
         } catch {
-            errorMessage = "Failed to build report: \(error)"
+            errorMessage = "Failed to build report: \(error.localizedDescription)"
         }
     }
 
