@@ -81,7 +81,7 @@ func joinQueue(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) as
     }
     
     var data: [String: Any] = [
-            "userID": userId,
+            "userId": userId,
             "mode": mode.rawValue,
             "joinedAt": Timestamp(date: Date())
         ]
@@ -199,25 +199,26 @@ func createPendingSession(
     return session
 }
 
-func requestRandomMatch(userId: String, mode: Session.Mode) async throws -> Session? {
+func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> Session? {
     // Unwraps waitingUser object
-    if let matchedUser = try await findWaitingMatch(userId: userId,  mode: mode) {
-        guard matchedUser.userID != userId else {
+    if let matchedUser = try await findWaitingMatch(userId: userId,  mode: mode, topic: topic) {
+        guard matchedUser.userId != userId else {
             try await joinQueue(userId: userId, mode: mode)
             return nil
         }
         // Remove the exact matched queue document before creating the session.
-        try await cancelWaitingRequest(userId: matchedUser.id ?? matchedUser.userID)
+        try await cancelWaitingRequest(userId: matchedUser.id ?? matchedUser.userId)
         
         // Creates a new session
         let session = try await createPendingSession(
-            userID1: matchedUser.userID,
+            userID1: matchedUser.userId,
             userID2: userId,
-            mode: mode)
+            mode: mode,
+            topic: topic)
         return session
     } else {
         // Adds user to queue if nil is unwrapped
-        try await joinQueue(userId: userId, mode: mode)
+        try await joinQueue(userId: userId, mode: mode, topic: topic)
         return nil
     }
 }
