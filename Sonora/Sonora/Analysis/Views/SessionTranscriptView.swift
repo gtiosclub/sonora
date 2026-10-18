@@ -275,6 +275,12 @@ struct SessionTranscriptView: View {
 
     private func makePlayerIfNeeded() {
         guard player == nil, let videoURL else { return }
+        // Use the playback category so audio is heard even when the ring/silent
+        // switch is set to silent (the default ambient category stays muted).
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setCategory(.playback)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        #endif
         player = AVPlayer(url: videoURL)
     }
 
