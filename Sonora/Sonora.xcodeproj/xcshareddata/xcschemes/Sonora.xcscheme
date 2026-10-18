@@ -17,6 +17,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "CED3477130571E5C0016E355"
                BuildableName = "Sonora.app"
+               BlueprintName = "Sonora"
                ReferencedContainer = "container:Sonora.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,6 +47,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CED3477130571E5C0016E355"
             BuildableName = "Sonora.app"
+            BlueprintName = "Sonora"
             ReferencedContainer = "container:Sonora.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -62,6 +64,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "CED3477130571E5C0016E355"
             BuildableName = "Sonora.app"
+            BlueprintName = "Sonora"
             ReferencedContainer = "container:Sonora.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
