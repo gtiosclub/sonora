@@ -28,11 +28,16 @@ struct ContentView: View {
                 NavigationLink(destination: TestView()) {
                     Text("Go to Test View")
                 }
+                
                 NavigationLink(destination: SkillProfileTestView()) {
                     Text("Go to SkillProfile Test View")
                 }
                 NavigationLink(destination: DrillsCommunityTestView()) {
                     Text("Go to Drills & Community Test View")
+                }
+                
+                NavigationLink(destination: PairingSetupView()) {
+                    Text("Go to Live Session Pairing View")
                 }
             }
         }

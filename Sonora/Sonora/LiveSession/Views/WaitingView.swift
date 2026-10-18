@@ -11,6 +11,9 @@ import SwiftUI
 //Screen 2: Waiting 
 struct WaitingView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var auth
+
+    
 
     var body: some View {
         AppLayout {
@@ -46,6 +49,15 @@ struct WaitingView: View {
                 Spacer()
 
                 Button {
+                    Task {
+                            do {
+                                try await cancelWaitingRequest(
+                                    userId: auth.currentUser?.id ?? ""
+                                )
+                            } catch {
+                                print("Failed to cancel waiting request: \(error)")
+                            }
+                        }
                     dismiss()
                 } label: {
                     Text("Cancel")
