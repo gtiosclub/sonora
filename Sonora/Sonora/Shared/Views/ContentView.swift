@@ -13,7 +13,7 @@ struct ContentView: View {
     var body: some View {
         VStack {
             NavigationStack{
-                Text("Hi, \(auth.currentUser?.username ?? "there")")
+                Text("Hi, \(auth.currentUser?.username ?? "!")")
                     .font(.title2.bold())
                 Text(auth.currentUser?.email ?? "")
                     .foregroundStyle(.secondary)
@@ -33,6 +33,9 @@ struct ContentView: View {
                 }
                 NavigationLink(destination: DrillsCommunityTestView()) {
                     Text("Go to Drills & Community Test View")
+                }
+                NavigationLink(destination: ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))) {
+                    Text("Go to Profile View")
                 }
             }
         }
