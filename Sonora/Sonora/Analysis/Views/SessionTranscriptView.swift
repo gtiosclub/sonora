@@ -3,8 +3,8 @@ import AVKit
 
 /// Screen 2/3 of the session-feedback flow: the full transcript page.
 /// Reached from the feedback summary via "See Transcript". Tapping a transcript
-/// moment highlights it, reveals the matching finding inline (screen 3), and seeks
-/// the video to that point.
+/// moment — or a pin on the video timeline — highlights it, reveals the matching
+/// finding inline (screen 3), and seeks the video to that point.
 struct SessionTranscriptView: View {
 
     let transcript: Transcript
@@ -12,17 +12,24 @@ struct SessionTranscriptView: View {
     var videoURL: URL?
     var dateText: String = "Recorded Oct 18, 2026 · 4:35"
 
-    /// Fixed heights so long transcripts/moments scroll within their own pane
-    /// instead of stretching the whole page.
+    /// Cap heights so long transcripts/moments scroll within their own pane.
+    /// Each pane still shrinks to fit when its content is shorter than the cap.
     private let transcriptPaneHeight: CGFloat = 300
     private let momentsPaneHeight: CGFloat = 200
 
     @Environment(\.dismiss) private var dismiss
     @State private var selectedSegmentID: TranscriptSegment.ID?
     @State private var player: AVPlayer?
+    @State private var transcriptContentHeight: CGFloat = 0
+    @State private var momentsContentHeight: CGFloat = 0
 
     private var segments: [TranscriptSegment] {
         Self.makeSegments(words: transcript.words, findings: report.findings)
+    }
+
+    /// Length of the video timeline, used to place the findings pins.
+    private var timelineDuration: TimeInterval {
+        max(transcript.words.last?.end ?? 0, report.findings.map(\.start).max() ?? 0, 1)
     }
 
     var body: some View {
@@ -50,23 +57,66 @@ struct SessionTranscriptView: View {
     private var videoSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             SonoraSectionHeader("Video Playback")
-            Group {
-                if let player {
-                    VideoPlayer(player: player)
+            VStack(spacing: 12) {
+                Group {
+                    if let player {
+                        VideoPlayer(player: player)
+                            .frame(height: 210)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    } else {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(SonoraColor.accent.opacity(0.12))
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 46))
+                                .foregroundStyle(SonoraColor.accent)
+                        }
                         .frame(height: 210)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                } else {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(SonoraColor.accent.opacity(0.12))
-                        Image(systemName: "play.circle.fill")
-                            .font(.system(size: 46))
-                            .foregroundStyle(SonoraColor.accent)
                     }
-                    .frame(height: 210)
+                }
+                if !report.findings.isEmpty {
+                    findingsTimeline
                 }
             }
             .sonoraCard()
+        }
+    }
+
+    /// A thin timeline under the video with a tappable pin at each finding.
+    private var findingsTimeline: some View {
+        VStack(spacing: 6) {
+            GeometryReader { geo in
+                let width = geo.size.width
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(SonoraColor.track)
+                        .frame(height: 4)
+                        .frame(maxHeight: .infinity, alignment: .center)
+                    ForEach(Array(report.findings.enumerated()), id: \.offset) { _, finding in
+                        let fraction = finding.start / timelineDuration
+                        let x = min(max(CGFloat(fraction) * width, 8), width - 8)
+                        Button {
+                            selectMoment(finding)
+                        } label: {
+                            Circle()
+                                .fill(SonoraColor.warning)
+                                .frame(width: 15, height: 15)
+                                .overlay(Circle().stroke(SonoraColor.card, lineWidth: 2))
+                        }
+                        .buttonStyle(.plain)
+                        .offset(x: x - 7.5)
+                        .frame(maxHeight: .infinity, alignment: .center)
+                    }
+                }
+            }
+            .frame(height: 16)
+            HStack {
+                Text("0:00")
+                Spacer()
+                Text(Self.timestamp(timelineDuration))
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(SonoraColor.textSecondary)
         }
     }
 
@@ -84,8 +134,10 @@ struct SessionTranscriptView: View {
                         }
                     }
                     .padding(.vertical, 2)
+                    .background(heightReader)
                 }
-                .frame(height: transcriptPaneHeight)
+                .frame(height: min(transcriptContentHeight, transcriptPaneHeight))
+                .onPreferenceChange(PaneHeightKey.self) { transcriptContentHeight = $0 }
                 .onChange(of: selectedSegmentID) { _, id in
                     guard let id else { return }
                     withAnimation(.easeInOut(duration: 0.2)) {
@@ -173,8 +225,10 @@ struct SessionTranscriptView: View {
                         }
                     }
                     .padding(.vertical, 2)
+                    .background(heightReader)
                 }
-                .frame(height: momentsPaneHeight)
+                .frame(height: min(momentsContentHeight, momentsPaneHeight))
+                .onPreferenceChange(PaneHeightKey.self) { momentsContentHeight = $0 }
             }
         }
     }
@@ -204,6 +258,7 @@ struct SessionTranscriptView: View {
             }
             .sonoraCard()
         }
+        .padding(.top, 10)
     }
 
     private var bottomButton: some View {
@@ -252,6 +307,14 @@ struct SessionTranscriptView: View {
 
     // MARK: - Helpers
 
+    /// Measures the content height of a pane so its scroll view can hug the content
+    /// (up to its cap) instead of leaving dead space.
+    private var heightReader: some View {
+        GeometryReader { geo in
+            Color.clear.preference(key: PaneHeightKey.self, value: geo.size.height)
+        }
+    }
+
     /// Illustrative recent-session filler counts for the Progress placeholder.
     private static let progressSample = [7, 6, 8, 5, 4]
 
@@ -299,6 +362,14 @@ struct TranscriptSegment: Identifiable {
     let end: TimeInterval
     let text: String
     let findings: [Finding]
+}
+
+/// Carries a pane's measured content height up to its scroll view.
+private struct PaneHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
 }
 
 #Preview {
