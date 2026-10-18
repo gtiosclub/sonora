@@ -11,20 +11,26 @@ struct SpeechPipeline {
         case analyzing = "Analyzing…"
     }
 
-    /// Takes a video, runs it through every speech service, and returns the finished report.
-    /// `onProgress` is called on the main actor at the start of each step; it defaults to a no-op
-    /// so existing callers are unaffected.
-    func analyze(
+    /// The transcript plus the report built from it.
+    struct Result {
+        let transcript: Transcript
+        let report: AnalysisReport
+    }
+
+    /// Takes a video, runs it through every speech service, and returns both the
+    /// transcript and the report. `onProgress` is called at the start of each step;
+    /// it defaults to a no-op so existing callers are unaffected.
+    func run(
         videoURL: URL,
         onProgress: @MainActor (Step) -> Void = { _ in }
-    ) async throws -> AnalysisReport {
+    ) async throws -> Result {
         // 1. Pull the audio out of the video into a temporary .m4a.
-        await onProgress(.extractingAudio)
+        onProgress(.extractingAudio)
         let audioURL = try await AudioExtractor.extractAudio(from: videoURL)
 
         // 2. Send the audio to Deepgram. Clean up the temp file afterward,
         //    even if transcription or a later step throws.
-        await onProgress(.transcribing)
+        onProgress(.transcribing)
         let data: Data
         do {
             data = try await DeepgramTranscriptionService().transcribe(fileURL: audioURL)
@@ -35,10 +41,17 @@ struct SpeechPipeline {
         try? FileManager.default.removeItem(at: audioURL)
 
         // 3. Turn the raw JSON into a Transcript, then build the report.
-        await onProgress(.analyzing)
+        onProgress(.analyzing)
         let transcript = try DeepgramDecoder().decode(data)
+        let report = SpeechReportBuilder().buildReport(from: transcript)
+        return Result(transcript: transcript, report: report)
+    }
 
-        // 4. Build the analysis report from the transcript.
-        return SpeechReportBuilder().buildReport(from: transcript)
+    /// Convenience that returns just the report. Existing callers rely on this.
+    func analyze(
+        videoURL: URL,
+        onProgress: @MainActor (Step) -> Void = { _ in }
+    ) async throws -> AnalysisReport {
+        try await run(videoURL: videoURL, onProgress: onProgress).report
     }
 }
