@@ -19,13 +19,15 @@ struct SonoraApp: App {
     private let transcript = try! MockTranscriptionService().loadTranscript(fromFixture: "sample_short")
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                SessionFeedbackView(
-                    feedback: .sample,
-                    transcript: transcript,
-                    report: SpeechReportBuilder().buildReport(from: transcript)
-                )
-            }
+            // NavigationStack {
+            //     SessionFeedbackView(
+            //         feedback: .sample,
+            //         transcript: transcript,
+            //         report: SpeechReportBuilder().buildReport(from: transcript)
+            //     )
+            // }
+            RootView()
+                .environment(auth)
         }
     }
 }
