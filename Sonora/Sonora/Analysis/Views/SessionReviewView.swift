@@ -24,20 +24,18 @@ struct SessionReviewView: View {
         metrics: [],
         findings: []
     )
-    @State private var showTranscript = false
 
     private let analyzer = SessionAnalyzer()
 
     var body: some View {
+        // SessionFeedbackView owns the push to the transcript screen; we just feed it data.
         NavigationStack {
             SessionFeedbackView(
                 feedback: feedback,
-                onReviewMoment: { showTranscript = true },
-                onSeeTranscriptPlayback: { showTranscript = true }
+                transcript: transcript,
+                report: report,
+                videoURL: videoURL
             )
-            .navigationDestination(isPresented: $showTranscript) {
-                SessionTranscriptView(transcript: transcript, report: report, videoURL: videoURL)
-            }
         }
         .task { await load() }
     }
