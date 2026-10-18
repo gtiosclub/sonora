@@ -215,9 +215,9 @@ struct SessionTranscriptView: View {
                                         .font(.subheadline)
                                         .foregroundStyle(SonoraColor.textPrimary)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(SonoraColor.textSecondary)
+                                    Image(systemName: "play.circle")
+                                        .font(.body)
+                                        .foregroundStyle(SonoraColor.accent)
                                 }
                                 .sonoraCard()
                             }
@@ -294,15 +294,22 @@ struct SessionTranscriptView: View {
         }
     }
 
-    /// Selects the transcript segment a finding falls in and seeks the video to it.
+    /// Selects the transcript segment nearest a finding and seeks the video there.
     private func selectMoment(_ finding: Finding) {
-        guard let segment = segments.first(where: {
-            finding.start >= $0.start && finding.start <= $0.end
-        }) else { return }
+        guard let segment = nearestSegment(to: finding.start) else { return }
         withAnimation(.easeInOut(duration: 0.2)) {
             selectedSegmentID = segment.id
         }
         seek(to: finding.start)
+    }
+
+    /// The segment containing the time, or the closest one by start if it falls in a gap.
+    private func nearestSegment(to time: TimeInterval) -> TranscriptSegment? {
+        let all = segments
+        if let containing = all.first(where: { time >= $0.start && time <= $0.end }) {
+            return containing
+        }
+        return all.min { abs($0.start - time) < abs($1.start - time) }
     }
 
     private func seek(to seconds: TimeInterval) {
