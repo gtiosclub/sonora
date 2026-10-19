@@ -28,6 +28,7 @@ struct ContentView: View {
                 NavigationLink(destination: TestView()) {
                     Text("Go to Test View")
                 }
+                
                 NavigationLink(destination: SkillProfileTestView()) {
                     Text("Go to SkillProfile Test View")
                 }
@@ -39,6 +40,9 @@ struct ContentView: View {
                 }
                 NavigationLink(destination: ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))) {
                     Text("Go to Profile View")
+                
+                NavigationLink(destination: PairingSetupView()) {
+                    Text("Go to Live Session Pairing View")
                 }
             }
         }
