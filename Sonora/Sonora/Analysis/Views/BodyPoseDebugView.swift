@@ -36,8 +36,7 @@ struct BodyPoseDebugView: View {
 
                 let tilt = String(format: "%.1f", posture.shoulderTilt)
                 let head = String(format: "%.2f", posture.headHeight)
-                let midpoint = String(format: "%.2f", posture.shoulderMidX)
-                lines.append("\(Int(frame.timestamp))s tilt \(tilt)° head \(head) midpoint \(midpoint)")
+                lines.append("\(Int(frame.timestamp))s tilt \(tilt)° head \(head)")
             }
         } catch {
             lines.append("Error: \(error)")

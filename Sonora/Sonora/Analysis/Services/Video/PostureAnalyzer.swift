@@ -11,7 +11,6 @@ import Foundation
 struct PostureMeasurement {
     let shoulderTilt: Double   // degrees, 0 means level shoulders
     let headHeight: Double     // nose y minus average shoulder y
-    let shoulderMidX: Double   // shoulder midpoint
 }
 
 struct PostureAnalyzer {
@@ -34,11 +33,8 @@ struct PostureAnalyzer {
         // Head height: Vision's y goes up, so a higher nose means a bigger number
         let averageShoulderY = (leftShoulder.position.y + rightShoulder.position.y) / 2
         let headHeight = Double(nose.position.y - averageShoulderY)
-        
-        // Horizontal shoulder-midpoint position so sway can be measured
-        let shoulderMidX = Double((leftShoulder.position.x + rightShoulder.position.x) / 2)
 
-        return PostureMeasurement(shoulderTilt: shoulderTilt, headHeight: headHeight, shoulderMidX: shoulderMidX)
+        return PostureMeasurement(shoulderTilt: shoulderTilt, headHeight: headHeight)
     }
 
     /// Finds one joint by name, or nil if it wasn't confident enough to be kept.
