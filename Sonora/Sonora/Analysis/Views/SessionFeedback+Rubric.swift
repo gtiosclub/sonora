@@ -31,7 +31,7 @@ extension SessionFeedback {
         let skills = [
             categoryBar("Speaking clarity", scores.clarity),
             categoryBar("Confidence", scores.confidence),
-            categoryBar("Engaging", scores.engaging),
+            categoryBar("Engaging", scores.engagement),
             pendingBar("Content")   // LLM not wired yet
         ]
 

@@ -8,6 +8,6 @@
 import Foundation
 
 struct SessionScores: Codable, Equatable {        // all 0–100
-    var engaging: Int, confidence: Int, clarity: Int, content: Int
-    var asArray: [Int] { [engaging, confidence, clarity, content] }
+    var engagement: Int, confidence: Int, clarity: Int, content: Int
+    var asArray: [Int] { [engagement, confidence, clarity, content] }
 }
