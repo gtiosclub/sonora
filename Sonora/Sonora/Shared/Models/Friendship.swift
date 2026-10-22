@@ -19,6 +19,7 @@ struct Friendship: Identifiable, Codable {
 enum FriendshipStatus: String, Codable {
     case pending
     case accepted
+    case blocked
 }
 
 
