@@ -15,9 +15,9 @@ enum SpeechType: String, Codable, CaseIterable {
     /// Category weights (sum to 1) used for the overall score.
     var weights: CategoryWeights {
         switch self {
-        case .presentation: CategoryWeights(clarity: 0.25, confidence: 0.25, engaging: 0.25, content: 0.25)
-        case .debate:       CategoryWeights(clarity: 0.20, confidence: 0.20, engaging: 0.15, content: 0.45)
-        case .interview:    CategoryWeights(clarity: 0.25, confidence: 0.30, engaging: 0.15, content: 0.30)
+        case .presentation: CategoryWeights(clarity: 0.25, confidence: 0.25, engagement: 0.25, content: 0.25)
+        case .debate:       CategoryWeights(clarity: 0.20, confidence: 0.20, engagement: 0.15, content: 0.45)
+        case .interview:    CategoryWeights(clarity: 0.25, confidence: 0.30, engagement: 0.15, content: 0.30)
         }
     }
 
@@ -33,6 +33,6 @@ enum SpeechType: String, Codable, CaseIterable {
 struct CategoryWeights {
     let clarity: Double
     let confidence: Double
-    let engaging: Double
+    let engagement: Double
     let content: Double
 }
