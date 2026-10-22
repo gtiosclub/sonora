@@ -126,7 +126,7 @@ struct SessionScorer {
         // MARK: Assemble
 
         let scores = SessionScores(
-            engaging: Self.toInt(engaging),
+            engagement: Self.toInt(engaging),
             confidence: Self.toInt(confidence),
             clarity: Self.toInt(clarity),
             content: 0 // not scored until the LLM layer exists
@@ -150,8 +150,8 @@ struct SessionScorer {
         clarity: Double, confidence: Double, engaging: Double, speechType: SpeechType
     ) -> Int {
         let w = speechType.weights
-        let weighted = clarity * w.clarity + confidence * w.confidence + engaging * w.engaging
-        let totalWeight = w.clarity + w.confidence + w.engaging
+        let weighted = clarity * w.clarity + confidence * w.confidence + engaging * w.engagement
+        let totalWeight = w.clarity + w.confidence + w.engagement
         return toInt(totalWeight > 0 ? weighted / totalWeight : 0)
     }
 

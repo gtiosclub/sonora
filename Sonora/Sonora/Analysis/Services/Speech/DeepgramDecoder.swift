@@ -28,7 +28,9 @@ struct DeepgramDecoder {
         let word: String
         let start: Double
         let end: Double
-        let confidence: Double
+        // Optional: Deepgram usually sends this, but tolerate responses that omit it
+        // rather than failing the whole decode.
+        let confidence: Double?
     }
 
     /// Converts Deepgram JSON into Transcript.
