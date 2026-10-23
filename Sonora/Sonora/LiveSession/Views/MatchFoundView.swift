@@ -21,28 +21,52 @@ struct MatchFoundView: View {
     var body: some View {
         AppLayout {
             VStack(alignment: .leading, spacing: 20) {
+                Text("It's a Match!")
+                    .font(.title2)
+                    .bold()
+
                 Text("Session invitation")
-                    .font(.title2.bold())
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
 
                 OutlinedCard {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Image(systemName: "person.2.fill")
-                            .font(.system(size: 42))
-                            .frame(maxWidth: .infinity)
+                    VStack(spacing: 14) {
+                        Image(systemName: "person.crop.square")
+                            .font(.system(size: 55))
 
-                        Text(session.mode.displayName)
+                        Text("Jason C.")
                             .font(.headline)
 
-                        Text(session.prompt ?? "A practice partner invited you to join this session.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                        OutlinedCard {
+                            HStack {
+                                Image(systemName: "checkmark.circle")
+
+                                Text(session.prompt ?? "You're both practicing clear, confident interview answers.")
+                                    .font(.caption)
+                            }
+                        }
+
+                        HStack {
+                            matchTag("Intermediate Speaker")
+                            matchTag("10 mins")
+                        }
+
+                        matchTag(session.mode.displayName)
 
                         Text("Both participants need to accept before the session starts.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(maxWidth: .infinity)
                 }
+
+                Text("SESSION RULES")
+                    .font(.caption)
+                    .foregroundColor(.gray)
+
+                ruleRow("Take turns. Each person gets 4 minutes to practice.")
+                ruleRow("Be specific. Share one useful note after each turn.")
+                ruleRow("Keep it kind. This is a judgment-free practice space.")
 
                 if hasAccepted {
                     HStack(spacing: 10) {
@@ -60,8 +84,12 @@ struct MatchFoundView: View {
 
                 Spacer()
 
+                Text(hasAccepted ? "You accepted this session." : "Accept to start the session.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 PrimaryButton(
-                    title: isSubmitting ? "Please wait…" : (hasAccepted ? "Accepted" : "Accept session"),
+                    title: isSubmitting ? "Please wait…" : (hasAccepted ? "Accepted" : "Start"),
                     action: acceptInvitation
                 )
                 .disabled(isSubmitting || hasAccepted)
@@ -87,6 +115,26 @@ struct MatchFoundView: View {
         .onDisappear {
             sessionListener?.remove()
             sessionListener = nil
+        }
+    }
+
+    // Reusable tags from the original match screen.
+    private func matchTag(_ text: String) -> some View {
+        Text(text)
+            .font(.caption2)
+            .foregroundColor(.white)
+            .padding(8)
+            .background(Color.black)
+            .cornerRadius(5)
+    }
+
+    // Reusable session-rule row from the original match screen.
+    private func ruleRow(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "checkmark.circle.fill")
+
+            Text(text)
+                .font(.subheadline)
         }
     }
 
