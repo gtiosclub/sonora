@@ -5,19 +5,15 @@
 //  Created by Jocelyn Chen on 10/1/26.
 //
 
-//
-//  HeatMapView.swift
-//  Sonora
-//
-
 import SwiftUI
 
 struct HeatMapView: View {
     @StateObject private var viewModel: HeatMapViewModel
 
     private let labelWidth: CGFloat = 80
-    private let cellHeight: CGFloat = 40
-    private let gap: CGFloat = 1
+    private let cellHeight: CGFloat = 36
+    private let gap: CGFloat = 6
+    private let cornerRadius: CGFloat = 6
 
     init(viewModel: HeatMapViewModel = HeatMapViewModel(sessionScores: exampleSessionScores)) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -52,15 +48,13 @@ struct HeatMapView: View {
                     ForEach(Array(grid.enumerated()), id: \.offset) { _, row in
                         HStack(spacing: gap) {
                             ForEach(Array(row.enumerated()), id: \.offset) { _, color in
-                                Rectangle()
+                                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                                     .fill(swiftUIColor(color))
                                     .frame(height: cellHeight)
                             }
                         }
                     }
                 }
-                .background(Color.white.opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
             }
 
             // x-axis labels
