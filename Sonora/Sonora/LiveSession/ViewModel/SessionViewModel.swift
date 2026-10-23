@@ -199,6 +199,99 @@ func createPendingSession(
     return session
 }
 
+// Observes sessions containing this user, including pending and terminal status changes.
+@discardableResult
+func listenForUserSessions(
+    userId: String,
+    onChange: @escaping (Result<[Session], Error>) -> Void
+) -> ListenerRegistration {
+    Firestore.firestore()
+        .collection("Sessions")
+        .whereField("participants", arrayContains: userId)
+        .addSnapshotListener { snapshot, error in
+            if let error {
+                onChange(.failure(error))
+                return
+            }
+
+            guard let snapshot else { return }
+            let sessions = snapshot.documents.compactMap { try? decodeSession($0) }
+            onChange(.success(sessions))
+        }
+}
+
+// Observes status and participant changes for a single session.
+@discardableResult
+func listenToSession(
+    sessionId: String,
+    onChange: @escaping (Result<Session, Error>) -> Void
+) -> ListenerRegistration {
+    Firestore.firestore()
+        .collection("Sessions")
+        .document(sessionId)
+        .addSnapshotListener { snapshot, error in
+            if let error {
+                onChange(.failure(error))
+                return
+            }
+
+            guard let snapshot, snapshot.exists else { return }
+            do {
+                onChange(.success(try decodeSession(snapshot)))
+            } catch {
+                onChange(.failure(error))
+            }
+        }
+}
+
+private func decodeSession(_ document: DocumentSnapshot) throws -> Session {
+    if var session = try? document.data(as: Session.self) {
+        session.id = document.documentID
+        return session
+    }
+
+    guard let data = document.data(),
+          let participants = data["participants"] as? [String],
+          let statusRawValue = data["status"] as? String,
+          let status = Session.Status(rawValue: statusRawValue),
+          let modeRawValue = data["mode"] as? String,
+          let mode = Session.Mode(rawValue: modeRawValue) else {
+        throw SessionListenerError.invalidSessionDocument
+    }
+
+    let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? .distantPast
+    let startTime = (data["startTime"] as? Timestamp)?.dateValue()
+    let opponentType = (data["opponentType"] as? String)
+        .flatMap(Session.OpponentType.init(rawValue:)) ?? .human
+
+    return Session(
+        id: document.documentID,
+        participants: participants,
+        status: status,
+        acceptedBy: data["acceptedBy"] as? [String] ?? [],
+        aIOpponent: nil,
+        mode: mode,
+        opponentType: opponentType,
+        startTime: startTime,
+        createdAt: createdAt,
+        durationSeconds: data["durationSeconds"] as? Int,
+        topic: nil,
+        sessionSkillScore: nil,
+        summary: data["summary"] as? String,
+        prompt: data["prompt"] as? String,
+        analysis: data["analysis"] as? String,
+        scores: data["scores"] as? [Int]
+    )
+}
+
+private enum SessionListenerError: LocalizedError {
+    case invalidSessionDocument
+
+    var errorDescription: String? {
+        "The session document is missing required fields."
+    }
+}
+
 func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> Session? {
     // Unwraps waitingUser object
     if let matchedUser = try await findWaitingMatch(userId: userId,  mode: mode, topic: topic) {
@@ -228,17 +321,20 @@ func inviteFriendToSession(
         toUserId: String,
         mode: Session.Mode
     ) async throws -> String {
-        
-        let db = Firestore.firestore()
-        
-        let documentRef = try await db.collection("Sessions")
-            .addDocument(data: [
-                "participants": [fromUserId, toUserId],
-                "acceptedBy": [fromUserId],
-                "mode": mode.rawValue,
-                "status": "pending"
-            ])
-        
+
+        let documentRef = Firestore.firestore().collection("Sessions").document()
+        let now = Date()
+        let session = Session(
+            id: documentRef.documentID,
+            participants: [fromUserId, toUserId],
+            status: .pending,
+            acceptedBy: [fromUserId],
+            mode: mode,
+            opponentType: .human,
+            startTime: nil,
+            createdAt: now
+        )
+        try documentRef.setData(from: session)
         return documentRef.documentID
 }
 
