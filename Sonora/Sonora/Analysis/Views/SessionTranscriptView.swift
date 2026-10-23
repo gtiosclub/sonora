@@ -39,6 +39,7 @@ struct SessionTranscriptView: View {
                 videoSection
                 transcriptSection
                 momentsSection
+                metricsSection
                 progressSection
                 bottomButton
             }
@@ -233,6 +234,38 @@ struct SessionTranscriptView: View {
         }
     }
 
+    // MARK: - Metrics
+    
+    /// Lists every computed metric entry (name + value), and show nothing when there is none.
+    @ViewBuilder
+    private var metricsSection: some View {
+        if !report.metrics.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                SonoraSectionHeader("Metrics")
+                VStack(spacing: 0) {
+                    ForEach(Array(report.metrics.enumerated()), id: \.offset) { index, metric in
+                        HStack {
+                            Text(metric.name)
+                                .font(.subheadline)
+                                .foregroundStyle(SonoraColor.textPrimary)
+                            Spacer()
+                            Text(String(format: "%.1f", metric.value))
+                                .font(.subheadline.monospacedDigit().weight(.semibold))
+                                .foregroundStyle(SonoraColor.textPrimary)
+                        }
+                        .padding(.vertical, 8)
+                        
+                        if index < report.metrics.count - 1 {
+                            Divider()
+                        }
+                    }
+                }
+                .sonoraCard()
+            }
+            .padding(.top, 10)
+        }
+    }
+    
     // MARK: - Progress
 
     private var progressSection: some View {
