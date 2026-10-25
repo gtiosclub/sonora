@@ -171,6 +171,16 @@ struct TestView: View {
                         Text(output)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+            
+            Button("Test Complete Session") {
+                Task {
+                    do {
+                        try await completeSession(sessionID: "LYtYJeufsUqX7lRXoN3S")
+                    } catch {
+                        print("Failed with error: \(error.localizedDescription)")
+                    }
+                }
+            }
         }
         .padding()
     }
