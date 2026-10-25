@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct FaceSample {
+struct FaceSample: Codable, Equatable {
     let yaw: Double     // turning left/right
     let pitch: Double   // looking up/down
     let roll: Double    // tilting head sideways

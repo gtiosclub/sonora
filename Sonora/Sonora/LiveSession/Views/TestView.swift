@@ -52,7 +52,7 @@ struct TestView: View {
                 Task {
                     do {
                         let match = try await findWaitingMatch(userId: auth.currentUser?.id ?? "", mode: .interview)
-                        output = match.map { "Match: \($0.userID)" } ?? "no match"
+                        output = match.map { "Match: \($0.userId)" } ?? "no match"
                     } catch {
                         output = "ERROR: \(error.localizedDescription)"
                     }
@@ -120,7 +120,7 @@ struct TestView: View {
                         }
                         let match = try await findWaitingMatch(userId: userId, mode: .debate, topic: selectedDebateTopic)
                         if let match = match {
-                            output = "Match found: \(match.userID)"
+                            output = "Match found: \(match.userId)"
                         } else {
                             output = "No users waiting for this debate topic"
                         }
