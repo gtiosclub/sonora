@@ -25,14 +25,38 @@ struct User: Codable, Equatable, Identifiable {
     var pastDrills: [Drill]
     
     // MARK: MANDATORY
+    
+    // MARK: FOR STREAK LOGIC
+    var lastDrillDate: Date?
+    
+    mutating func checkStreak() {
+        guard let lastDrillDate = lastDrillDate else {
+            streak = 0
+            return
+        }
+
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let lastDrillDay = calendar.startOfDay(for: lastDrillDate)
+
+        let daysSinceLastDrill = calendar.dateComponents(
+            [.day],
+            from: lastDrillDay,
+            to: today
+        ).day ?? 0
+
+        if daysSinceLastDrill > 1 {
+            streak = 0
+        }
+    }
 }
 
 
 extension User {
     /// A brand-new user with empty defaults. Used at sign up.
     static func makeNew(userId: String, username: String, email: String) -> User {
-        func emptySkill() -> SkillProfile.Skill {
-            SkillProfile.Skill(id: UUID().uuidString, summary: "")
+        func emptySkill() -> Skill {
+            Skill(id: UUID().uuidString, score: 50, summary: "")
         }
 
         return User(

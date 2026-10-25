@@ -9,7 +9,6 @@
 import Foundation
 
 struct SkillProfile: Identifiable, Equatable, Codable {
-    // MARK: MANDATORY
     var id: String
     var userId: String
     
@@ -18,20 +17,18 @@ struct SkillProfile: Identifiable, Equatable, Codable {
     var clarity: Skill
     var confidence: Skill
     var engaging: Skill
-    
+}
 
-    
-    struct Skill: Identifiable, Equatable, Codable {
-        var id: String
-        var summary: String
-    }
-    
-
+struct Skill: Identifiable, Equatable, Codable {
+    var id: String
+    var score: Int
+    var summary: String
 }
 
 extension SkillProfile {
     static func makeNew(userId: String) -> SkillProfile {
-        func empty() -> Skill { Skill(id: UUID().uuidString, summary: "") }
+        func empty() -> Skill { Skill(id: UUID().uuidString, score: 50, summary: "") }
+        func score(pScore: Int) -> Skill { Skill(id: UUID().uuidString, score: pScore, summary: "") }
         return SkillProfile(id: userId, userId: userId,
                             content: empty(), clarity: empty(), confidence: empty(), engaging: empty())
     }

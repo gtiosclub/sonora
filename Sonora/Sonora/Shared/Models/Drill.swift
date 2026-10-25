@@ -27,7 +27,7 @@ struct Drill: Identifiable, Equatable, Codable {
     var results: String
     
     //skill that the drill focused on and how much it leveled up
-    var skill: SkillProfile.Skill
+    var skill: Skill
     var subSkill: String
     var improvement: Int
     var difficulty: String
@@ -36,6 +36,9 @@ struct Drill: Identifiable, Equatable, Codable {
     var sourceSession: Session
     var topic: Topics?
     var prompt: String
+    
+    
+    var taskType: DrillTaskType?
     
 
 }
