@@ -17,12 +17,12 @@ import Foundation
 ///   - Confidence › posture stability (needs tuned sway/tilt thresholds)
 ///   - Engaging › gesture use (needs a waist reference joint) and audience hooks (LLM)
 ///   - Content (entirely LLM)
-/// Those are left out of their category averages; `content` stays 0 and is excluded
+/// Those are left out of their category averages; `content` stays nil and is excluded
 /// from the overall until the LLM layer exists.
 struct SessionScorer {
 
     struct Result {
-        let scores: SessionScores   // content is 0 until the LLM layer lands
+        let scores: SessionScores   // content is nil until the LLM layer lands
         let overall: Int            // weighted over the categories we can compute
         let metrics: [Metric]
         let findings: [Finding]
@@ -129,7 +129,7 @@ struct SessionScorer {
             engagement: Self.toInt(engaging),
             confidence: Self.toInt(confidence),
             clarity: Self.toInt(clarity),
-            content: 0 // not scored until the LLM layer exists
+            content: nil // not scored until the LLM layer exists
         )
 
         let overall = Self.overall(
