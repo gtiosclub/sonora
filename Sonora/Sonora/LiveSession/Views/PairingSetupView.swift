@@ -8,18 +8,19 @@
 
 
 import SwiftUI
+import Observation
 
 //Screen 1: Pairing Setup
 struct PairingSetupView: View {
     @Environment(AuthManager.self) private var auth
+    @Environment(\.dismiss) private var dismiss
     @State private var practiceType = "Select"
     @State private var topic = ""
     @State private var sessionLength = 10
-    @State private var showWaiting = false
-    @State private var matchedSession: Session?
-    @State private var showMatchFound = false
+    @State private var router = PairingNavigationRouter()
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
     @State private var practicePartner = "Live person"
+    @State private var matchingError: String?
 
     let practiceTypes = [
         "Select",
@@ -33,7 +34,7 @@ struct PairingSetupView: View {
     let sessionLengths = [5, 10, 20, 30]
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $router.path) {
             AppLayout {
                 VStack(alignment: .leading, spacing: 20) {
 
@@ -159,52 +160,46 @@ struct PairingSetupView: View {
                     Spacer()
                     
                     Button {
-                        Task {
+                        Task { @MainActor in
                             do {
                                 print("button called")
-                                var selectedMode: Session.Mode {
-                                    switch practiceType {
-                                    case "Interview Practice":
-                                        return .interview
-                                    case "Debate":
-                                        return .debate
-                                    case "Public Speaking":
-                                        return .speech
-                                    default:
-                                        return .interview
-                                    }
+                                let selectedMode: Session.Mode
+                                switch practiceType {
+                                case "Interview Practice":
+                                    selectedMode = .interview
+                                case "Debate":
+                                    selectedMode = .debate
+                                case "Public Speaking":
+                                    selectedMode = .speech
+                                default:
+                                    selectedMode = .interview
                                 }
-                                var session = nil as Session?
-                                
+
                                 if practicePartner == "AI partner" {
-                                    session = try await createAISession(
+                                    let session = try await createAISession(
                                         userId: auth.currentUser?.id ?? "",
                                         mode: selectedMode
                                     )
-                                    
-                                    matchedSession = session
-                                    showMatchFound = true
+                                    routeToSession(session)
                                 } else {
-                                    
-                                    session = try await requestRandomMatch(
+                                    let matchingStartedAt = Date()
+                                    let session = try await requestRandomMatch(
                                         userId: auth.currentUser?.id ?? "",
                                         mode: selectedMode,
                                         topic: selectedMode == .debate ? selectedDebateTopic : nil
                                     )
-                                }
 
-                                if let session {
-                                    matchedSession = session
-                                    showMatchFound = true
-                                    print("session found")
-
-                                } else {
-                                    showWaiting = true
-                                    print("session not found")
-
+                                    if let session {
+                                        routeToSession(session)
+                                        print("session found")
+                                    } else {
+                                        router.path.append(.waiting(matchingStartedAt))
+                                        print("session not found")
+                                    }
                                 }
                             } catch {
                                 print("Matching failed: \(error)")
+                                matchingError = error.localizedDescription
                             }
                         }
                             
@@ -216,17 +211,112 @@ struct PairingSetupView: View {
                             .background(Color.black)
                             .cornerRadius(6)
                     }
-                    
+
                 }
-                .navigationDestination(isPresented: $showWaiting) {
-                    WaitingView()
+            }
+            .navigationDestination(for: PairingRoute.self) { route in
+                switch route {
+                case .waiting(let matchingStartedAt):
+                    WaitingView(matchingStartedAt: matchingStartedAt) { session in
+                        routeFromWaiting(session)
+                    }
+                case .invitation(let session):
+                    MatchFoundView(session: session) { updatedSession in
+                        handleInvitationUpdate(updatedSession)
+                    }
+                case .active(let session):
+                    LiveSessionView(session: session)
                 }
-                .navigationDestination(isPresented: $showMatchFound) {
-                    MatchFoundView()
-                }
+            }
+            .alert("Couldn't find a match", isPresented: Binding(
+                get: { matchingError != nil },
+                set: { if !$0 { matchingError = nil } }
+            )) {
+                Button("OK", role: .cancel) { matchingError = nil }
+            } message: {
+                Text(matchingError ?? "Please try again.")
             }
         }
     }
+
+    private func routeToSession(_ session: Session) {
+        switch session.status {
+        case .pending:
+            router.path.append(.invitation(session))
+        case .active:
+            router.path.append(.active(session))
+        case .declined, .deleted, .completed:
+            router.path.removeAll()
+            dismiss()
+        }
+    }
+
+    private func routeFromWaiting(_ session: Session) {
+        switch session.status {
+        case .pending:
+            router.path = router.path + [.invitation(session)]
+        case .active:
+            router.path = router.path + [.active(session)]
+        case .declined, .deleted, .completed:
+            router.path.removeAll()
+            dismiss()
+        }
+    }
+
+    private func handleInvitationUpdate(_ session: Session) {
+        switch session.status {
+        case .pending:
+            break
+        case .active:
+            if let lastRoute = router.path.last,
+               case .invitation(let currentSession) = lastRoute,
+               currentSession.id == session.id {
+                router.path[router.path.count - 1] = .active(session)
+            }
+        case .declined, .deleted, .completed:
+            router.path.removeAll()
+            dismiss()
+        }
+    }
+}
+
+private enum PairingRoute: Hashable {
+    case waiting(Date)
+    case invitation(Session)
+    case active(Session)
+
+    static func == (lhs: PairingRoute, rhs: PairingRoute) -> Bool {
+        switch (lhs, rhs) {
+        case let (.waiting(lhsDate), .waiting(rhsDate)):
+            return lhsDate == rhsDate
+        case let (.invitation(lhsSession), .invitation(rhsSession)):
+            return lhsSession.id == rhsSession.id
+        case let (.active(lhsSession), .active(rhsSession)):
+            return lhsSession.id == rhsSession.id
+        default:
+            return false
+        }
+    }
+
+    func hash(into hasher: inout Hasher) {
+        switch self {
+        case .waiting(let date):
+            hasher.combine(0)
+            hasher.combine(date)
+        case .invitation(let session):
+            hasher.combine(1)
+            hasher.combine(session.id)
+        case .active(let session):
+            hasher.combine(2)
+            hasher.combine(session.id)
+        }
+    }
+}
+
+@MainActor
+@Observable
+private final class PairingNavigationRouter {
+    var path: [PairingRoute] = []
 }
 
 #Preview {
