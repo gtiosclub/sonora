@@ -21,7 +21,7 @@ struct SpeechReportBuilder {
         }
 
         return AnalysisReport(
-            scores: SessionScores(engagement: 0, confidence: 0, clarity: 0, content: 0),
+            scores: SessionScores(engagement: 0, confidence: 0, clarity: 0, content: nil),
             summary: "",
             metrics: metrics,
             findings: findings.sorted { $0.start < $1.start }
