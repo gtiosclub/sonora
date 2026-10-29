@@ -39,7 +39,7 @@ extension SessionFeedback {
         let moment: ReviewMoment
         if let first = result.report.findings.first {
             moment = ReviewMoment(
-                timestamp: clock(first.start),
+                timestamp: first.start.asClock,
                 message: first.message,
                 position: min(max(first.start / duration, 0), 1)
             )
@@ -49,7 +49,7 @@ extension SessionFeedback {
 
         return SessionFeedback(
             sessionType: speechType.rawValue.capitalized,
-            duration: durationLabel(duration),
+            duration: duration.asSpoken,
             overallScore: result.overall,
             pointsChange: 0,
             skills: skills,
@@ -82,15 +82,5 @@ extension SessionFeedback {
             barColor: Theme.track,
             labelColor: Theme.textSecondary
         )
-    }
-
-    private static func clock(_ seconds: TimeInterval) -> String {
-        let total = Int(seconds.rounded())
-        return String(format: "%d:%02d", total / 60, total % 60)
-    }
-
-    private static func durationLabel(_ seconds: TimeInterval) -> String {
-        let total = Int(seconds.rounded())
-        return "\(total / 60) min \(total % 60) sec"
     }
 }
