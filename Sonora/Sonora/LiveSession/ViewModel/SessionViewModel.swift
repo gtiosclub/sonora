@@ -223,23 +223,38 @@ func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? 
     }
 }
     
+
 func inviteFriendToSession(
-        fromUserId: String,
-        toUserId: String,
-        mode: Session.Mode
-    ) async throws -> String {
-        
-        let db = Firestore.firestore()
-        
-        let documentRef = try await db.collection("Sessions")
-            .addDocument(data: [
-                "participants": [fromUserId, toUserId],
-                "acceptedBy": [fromUserId],
-                "mode": mode.rawValue,
-                "status": "pending"
-            ])
-        
-        return documentRef.documentID
+    fromUserId: String,
+    toUserId: String,
+    mode: Session.Mode,
+    prompt: String? = nil
+) async throws -> String {
+
+    let db = Firestore.firestore()
+
+    // Generate a document reference with a unique session ID.
+    let documentRef = db.collection("Sessions").document()
+
+    // Create the invitation with all required session fields.
+    var session = Session(
+        id: documentRef.documentID,
+        participants: [fromUserId, toUserId],
+        status: .pending,
+        acceptedBy: [fromUserId],
+        mode: mode,
+        opponentType: .human,
+        startTime: nil,
+        createdAt: Date()
+    )
+    if mode == .debate {
+        session.prompt = prompt
+    }
+
+    // Save the session to Firestore.
+    try documentRef.setData(from: session)
+
+    return documentRef.documentID
 }
 
 // Validates that a session with that session id exists and is currently active
@@ -283,6 +298,6 @@ func completeSession(sessionID: String) async throws{
     
     // populates end time and sets duration in seconds
     try await
-        sessionRef.updateData(["durationSeconds" : elapsedTime])
+        sessionRef.updateData(["durationSeconds" : Int(elapsedTime)])
 }
 
