@@ -23,13 +23,15 @@ struct SessionScoreDebugView: View {
     
     private func showSessionSkillScore() {
         do {
-            let url = Bundle.main.url(forResource: "deepgram_fillers_on", withExtension: "json")!
+            guard let url = Bundle.main.url(forResource: "deepgram_fillers_on", withExtension: "json") else {
+                text = "Error: couldn't find deepgram_fillers_on.json in the bundle"
+                return
+            }
             let data = try Data(contentsOf: url)
             let transcript = try DeepgramDecoder().decode(data)
-            let report = SpeechReportBuilder().buildReport(from: transcript)
+            let report = SessionAnalyzer().score(transcript: transcript, speechType: .presentation).report
 
-            let scores = SessionScores(engagement: 80, confidence: 70, clarity: 90, content: 60)
-            let result = SessionScoreMapper().make(from: scores, sessionID: "session-1", userID: "user-1")
+            let result = SessionScoreMapper().make(from: report.scores, sessionID: "session-1", userID: "user-1")
             text = "\(result)"
             print(result)
         } catch {
