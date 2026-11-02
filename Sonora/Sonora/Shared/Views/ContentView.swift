@@ -37,6 +37,9 @@ struct ContentView: View {
                 NavigationLink(destination: ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))) {
                     Text("Go to Profile View")
                 }
+                NavigationLink(destination: FriendshipTestView()) {
+                    Text("Go to Friendship Test View")
+                }
             }
         }
         .padding()
