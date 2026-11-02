@@ -114,7 +114,7 @@ struct SessionTranscriptView: View {
             HStack {
                 Text("0:00")
                 Spacer()
-                Text(Self.timestamp(timelineDuration))
+                Text(timelineDuration.asClock)
             }
             .font(.caption2.monospacedDigit())
             .foregroundStyle(SonoraColor.textSecondary)
@@ -153,7 +153,7 @@ struct SessionTranscriptView: View {
         let isSelected = selectedSegmentID == segment.id
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
-                Text(Self.timestamp(segment.start))
+                Text(segment.start.asClock)
                     .font(.caption.monospacedDigit().weight(.semibold))
                     .foregroundStyle(SonoraColor.accent)
                     .frame(width: 44, alignment: .leading)
@@ -177,7 +177,7 @@ struct SessionTranscriptView: View {
                 } else {
                     ForEach(Array(segment.findings.enumerated()), id: \.offset) { _, finding in
                         HStack(alignment: .top, spacing: 8) {
-                            SonoraTag(text: Self.timestamp(finding.start))
+                            SonoraTag(text: finding.start.asClock)
                             Text(finding.message)
                                 .font(.caption)
                                 .foregroundStyle(SonoraColor.warningText)
@@ -211,7 +211,7 @@ struct SessionTranscriptView: View {
                                 selectMoment(finding)
                             } label: {
                                 HStack(spacing: 12) {
-                                    SonoraTag(text: Self.timestamp(finding.start))
+                                    SonoraTag(text: finding.start.asClock)
                                     Text(finding.message)
                                         .font(.subheadline)
                                         .foregroundStyle(SonoraColor.textPrimary)
@@ -363,11 +363,6 @@ struct SessionTranscriptView: View {
 
     /// Illustrative recent-session filler counts for the Progress placeholder.
     private static let progressSample = [7, 6, 8, 5, 4]
-
-    static func timestamp(_ seconds: TimeInterval) -> String {
-        let total = Int(seconds.rounded())
-        return String(format: "%d:%02d", total / 60, total % 60)
-    }
 
     /// Groups transcript words into readable segments (new segment on a pause gap
     /// or after a max run of words) and attaches any findings that fall in each range.
