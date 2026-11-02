@@ -269,6 +269,16 @@ func completeSession(sessionID: String) async throws{
     // sets status to completed
     try await sessionRef.updateData(["status" : "completed"])
     
+    // Increment session count for each participant
+    if let participants = document.get("participants") as? [String] {
+        for userId in participants {
+            let userRef = db.collection("Users").document(userId)
+            try await userRef.setData([
+                "sessionCount": FieldValue.increment(Int64(1))
+            ], merge: true)
+        }
+    }	
+    
     // stores the start time of the session
     let startTime = document.get("startTime") as? Timestamp
     
@@ -285,4 +295,3 @@ func completeSession(sessionID: String) async throws{
     try await
         sessionRef.updateData(["durationSeconds" : elapsedTime])
 }
-
