@@ -222,7 +222,9 @@ struct PairingSetupView: View {
                     WaitingView()
                 }
                 .navigationDestination(isPresented: $showMatchFound) {
-                    MatchFoundView()
+                    if let matchedSession {
+                        MatchFoundView(session: matchedSession)
+                    }
                 }
             }
         }
