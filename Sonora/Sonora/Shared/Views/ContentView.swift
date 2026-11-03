@@ -33,11 +33,15 @@ struct ContentView: View {
                 NavigationLink(destination: SkillProfileTestView()) {
                     Text("Go to SkillProfile Test View")
                 }
-
+                NavigationLink(destination: PreferenceProfileTestView()) {
+                    Text("Go to PreferenceProfile Test View")
+                }
                 NavigationLink(destination: DrillsCommunityTestView()) {
                     Text("Go to Drills & Community Test View")
                 }
-
+                NavigationLink(destination: ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))) {
+                    Text("Go to Profile View")
+                
                 NavigationLink(destination: PairingSetupView()) {
                     Text("Go to Live Session Pairing View")
                 }
