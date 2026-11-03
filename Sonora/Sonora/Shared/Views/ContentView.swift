@@ -41,6 +41,9 @@ struct ContentView: View {
                 NavigationLink(destination: PairingSetupView()) {
                     Text("Go to Live Session Pairing View")
                 }
+                NavigationLink(destination: SessionHistoryView()) {
+                    Text("Go to Recent Sessions")
+                }
 
                 NavigationLink(destination: SessionReviewView(
                     videoURL: Bundle.main.url(forResource: "sample_presentation", withExtension: "mov"),
