@@ -174,11 +174,21 @@ struct TestView: View {
                             .font(.footnote)
                             .foregroundStyle(.secondary)
             
-            Button("Test Complete Session") {
+            Button("Test Complete Just Created AI Session") {
                 Task {
                     do {
                         try await completeSession(sessionID: createdSessionId)
                         output = "COMPLETED \(createdSessionId)!"
+                    } catch {
+                        output = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
+            
+            Button("Test Complete Session") {
+                Task {
+                    do {
+                        try await completeSession(sessionID: "Cm5gIWdmyuNpGFMGgn7I")
                     } catch {
                         output = "ERROR: \(error.localizedDescription)"
                     }
