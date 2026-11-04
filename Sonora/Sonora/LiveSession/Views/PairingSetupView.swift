@@ -20,6 +20,7 @@ struct PairingSetupView: View {
     @State private var showMatchFound = false
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
     @State private var practicePartner = "Live person"
+    @State private var waitingMode: Session.Mode = .interview
 
     let practiceTypes = [
         "Select",
@@ -27,7 +28,7 @@ struct PairingSetupView: View {
         "Public Speaking",
         "Debate"
     ]
-    
+
     let practicePartners = ["Live person", "AI partner"]
 
     let sessionLengths = [5, 10, 20, 30]
@@ -40,7 +41,7 @@ struct PairingSetupView: View {
                     Text("Join A Practice Session")
                         .font(.title2)
                         .bold()
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text("PRACTICE WITH")
                             .font(.caption)
@@ -157,7 +158,7 @@ struct PairingSetupView: View {
                     }
 
                     Spacer()
-                    
+
                     Button {
                         Task {
                             do {
@@ -174,18 +175,21 @@ struct PairingSetupView: View {
                                         return .interview
                                     }
                                 }
+
+                                waitingMode = selectedMode
+
                                 var session = nil as Session?
-                                
+
                                 if practicePartner == "AI partner" {
                                     session = try await createAISession(
                                         userId: auth.currentUser?.id ?? "",
                                         mode: selectedMode
                                     )
-                                    
+
                                     matchedSession = session
                                     showMatchFound = true
                                 } else {
-                                    
+
                                     session = try await requestRandomMatch(
                                         userId: auth.currentUser?.id ?? "",
                                         mode: selectedMode,
@@ -207,7 +211,7 @@ struct PairingSetupView: View {
                                 print("Matching failed: \(error)")
                             }
                         }
-                            
+
                     } label: {
                         Text("Find a match")
                             .foregroundColor(.white)
@@ -216,10 +220,10 @@ struct PairingSetupView: View {
                             .background(Color.black)
                             .cornerRadius(6)
                     }
-                    
+
                 }
                 .navigationDestination(isPresented: $showWaiting) {
-                    WaitingView()
+                    WaitingView(mode: waitingMode)
                 }
                 .navigationDestination(isPresented: $showMatchFound) {
                     if let matchedSession {
