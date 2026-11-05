@@ -286,3 +286,11 @@ func completeSession(sessionID: String) async throws{
         sessionRef.updateData(["durationSeconds" : elapsedTime])
 }
 
+// Stores video and transcript property in Firebase
+// Will be called in completeSession
+func addTranscribedVideo(videoURL: String, transcript: String, sessionRef: DocumentReference) async throws {
+    try await sessionRef.updateData(["video" : videoURL])
+    try await sessionRef.updateData(["transcript" : transcript])
+}
+
+
