@@ -179,7 +179,6 @@ struct PairingSetupView: View {
 
                                 waitingMode = selectedMode
 
-                                var session = nil as Session?
 
                                 if practicePartner == "AI partner" {
                                     let session = try await createAISession(
@@ -228,7 +227,7 @@ struct PairingSetupView: View {
             .navigationDestination(for: PairingRoute.self) { route in
                 switch route {
                 case .waiting(let matchingStartedAt):
-                    WaitingView(matchingStartedAt: matchingStartedAt) { session in
+                    WaitingView(mode: waitingMode, matchingStartedAt: matchingStartedAt) { session in
                         routeFromWaiting(session)
                     }
                 case .invitation(let session):
