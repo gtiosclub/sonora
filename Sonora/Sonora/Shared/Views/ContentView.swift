@@ -52,6 +52,9 @@ struct ContentView: View {
                 )) {
                     Text("Go to Analysis Feedback View")
                 }
+                NavigationLink(destination: FriendshipTestView()) {
+                    Text("Go to Friendship Test View")
+                }
             }
         }
         .padding()
