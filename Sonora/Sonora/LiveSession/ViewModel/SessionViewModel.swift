@@ -7,41 +7,30 @@
 
 import FirebaseFirestore
 
-func acceptSession(userId: String, sessionID: String) async throws{
-    // async means the function performs asynchronous work
-    // throws means the function can pass errors back to whoever called it
-    
-    //access firestore
+func acceptSession(userId: String, sessionID: String) async throws {
     let db = Firestore.firestore()
-    
-    // Get the session document using its ID
-    let sessionRef = db.collection("Sessions").document(sessionID)
-    let document = try await sessionRef.getDocument()
-    
-    // check to make sure the session exists
-    guard document.exists else{
-        return
-    }
-    
-    // Make sure the user is a participant in the session
-    guard let participants = document.data()?["participants"] as? [String],
-          participants.contains(userId) else {
-        return
-    }
-    
-    // Add the user to the list of users who accepted the session
-    try await sessionRef.updateData(["acceptedBy": FieldValue.arrayUnion([userId])])
-    
-    // Get the updated session data
-    let updatedDocument = try await sessionRef.getDocument()
-    // Get the updated list of users who accepted
-    guard let acceptedBy = updatedDocument.data()?["acceptedBy"] as? [String] else {
-        return
-    }
-    
-    // Start the session once all participants have accepted
-    if acceptedBy.count == participants.count {
-        try await sessionRef.updateData(["status":"active"])
+    let ref = db.collection("Sessions").document(sessionID)
+
+    _ = try await db.runTransaction { txn, errorPointer in
+        let snap: DocumentSnapshot
+        do { snap = try txn.getDocument(ref) }
+        catch { errorPointer?.pointee = error as NSError; return nil }
+
+        guard let data = snap.data(),
+              let participants = data["participants"] as? [String],
+              participants.contains(userId),
+              (data["status"] as? String) == "pending" else { return nil }
+
+        var accepted = data["acceptedBy"] as? [String] ?? []
+        if !accepted.contains(userId) { accepted.append(userId) }
+
+        var update: [String: Any] = ["acceptedBy": accepted]
+        if Set(accepted) == Set(participants) {
+            update["status"] = "active"
+            update["startTime"] = Timestamp(date: Date())
+        }
+        txn.updateData(update, forDocument: ref)
+        return nil
     }
 }
 
@@ -203,19 +192,18 @@ func createPendingSession(
 @discardableResult
 func listenForUserSessions(
     userId: String,
+    since: Date,
     onChange: @escaping (Result<[Session], Error>) -> Void
 ) -> ListenerRegistration {
     Firestore.firestore()
         .collection("Sessions")
         .whereField("participants", arrayContains: userId)
         .addSnapshotListener { snapshot, error in
-            if let error {
-                onChange(.failure(error))
-                return
-            }
-
+            if let error { onChange(.failure(error)); return }
             guard let snapshot else { return }
-            let sessions = snapshot.documents.compactMap { try? decodeSession($0) }
+            let sessions = snapshot.documents
+                .compactMap { try? decodeSession($0) }
+                .filter { $0.createdAt >= since.addingTimeInterval(-5) }  // small clock-skew buffer
             onChange(.success(sessions))
         }
 }

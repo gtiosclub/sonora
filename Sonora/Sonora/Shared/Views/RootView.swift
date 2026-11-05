@@ -15,6 +15,7 @@ struct RootView: View {
             ProgressView()
         } else if auth.isSignedIn {
             ContentView()
+                .preferredColorScheme(.light)
         } else {
             LoginView()
         }
