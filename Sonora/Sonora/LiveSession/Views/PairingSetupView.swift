@@ -20,6 +20,8 @@ struct PairingSetupView: View {
     @State private var router = PairingNavigationRouter()
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
     @State private var practicePartner = "Live person"
+    @State private var waitingMode: Session.Mode = .interview
+
     @State private var matchingError: String?
     
     let practiceTypes = [
@@ -28,7 +30,7 @@ struct PairingSetupView: View {
         "Public Speaking",
         "Debate"
     ]
-    
+
     let practicePartners = ["Live person", "AI partner"]
     
     let sessionLengths = [5, 10, 20, 30]
@@ -41,7 +43,7 @@ struct PairingSetupView: View {
                     Text("Join A Practice Session")
                         .font(.title2)
                         .bold()
-                    
+
                     VStack(alignment: .leading, spacing: 8) {
                         Text("PRACTICE WITH")
                             .font(.caption)
@@ -158,7 +160,7 @@ struct PairingSetupView: View {
                     }
                     
                     Spacer()
-                    
+
                     Button {
                         Task { @MainActor in
                             do {
@@ -174,7 +176,10 @@ struct PairingSetupView: View {
                                 default:
                                     selectedMode = .interview
                                 }
-                                
+
+                                waitingMode = selectedMode
+
+
                                 if practicePartner == "AI partner" {
                                     let session = try await createAISession(
                                         userId: auth.currentUser?.id ?? "",
@@ -211,7 +216,7 @@ struct PairingSetupView: View {
                             .background(Color.black)
                             .cornerRadius(6)
                     }
-                    
+
                 }
             }
             .toolbar {
@@ -222,7 +227,7 @@ struct PairingSetupView: View {
             .navigationDestination(for: PairingRoute.self) { route in
                 switch route {
                 case .waiting(let matchingStartedAt):
-                    WaitingView(matchingStartedAt: matchingStartedAt) { session in
+                    WaitingView(mode: waitingMode, matchingStartedAt: matchingStartedAt) { session in
                         routeFromWaiting(session)
                     }
                 case .invitation(let session):
