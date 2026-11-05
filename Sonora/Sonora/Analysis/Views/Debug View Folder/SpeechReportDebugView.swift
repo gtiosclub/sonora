@@ -47,7 +47,7 @@ struct SpeechReportDebugView: View {
                 Section("Findings (\(report.findings.count))") {
                     ForEach(Array(report.findings.enumerated()), id: \.offset) { _, f in
                         HStack {
-                            Text(Self.timestamp(f.start)).monospacedDigit()
+                            Text(f.start.asPreciseClock).monospacedDigit()
                             Text(f.message)
                         }
                     }
@@ -102,12 +102,6 @@ struct SpeechReportDebugView: View {
         } catch {
             errorMessage = "Failed to build report: \(error.localizedDescription)"
         }
-    }
-
-    static func timestamp(_ seconds: TimeInterval) -> String {
-        let minutes = Int(seconds) / 60
-        let secs = seconds - Double(minutes * 60)
-        return String(format: "%d:%05.2f", minutes, secs)
     }
 }
 

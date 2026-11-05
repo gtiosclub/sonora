@@ -226,6 +226,10 @@ struct PairingSetupView: View {
                     }
                 case .active(let session):
                     LiveSessionView(session: session)
+                .navigationDestination(isPresented: $showMatchFound) {
+                    if let matchedSession {
+                        MatchFoundView(session: matchedSession)
+                    }
                 }
             }
             .alert("Couldn't find a match", isPresented: Binding(
