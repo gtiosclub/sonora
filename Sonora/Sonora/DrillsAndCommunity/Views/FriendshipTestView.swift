@@ -68,7 +68,27 @@ struct FriendshipTestView: View {
                 Button("Refresh") { Task { await refresh() } }
                     .buttonStyle(.borderless)
             }
-
+            
+            Section("Queries") {
+                Button("Get friends") { runQuery { try await service.fetchFriends() } }
+                    .buttonStyle(.borderless)
+                Button("Incoming requests") { runQuery { try await service.fetchIncomingRequests() } }
+                    .buttonStyle(.borderless)
+                Button("Outgoing requests") { runQuery { try await service.fetchOutgoingRequests() } }
+                    .buttonStyle(.borderless)
+                Button("Have I blocked them?") {
+                    Task {
+                        do {
+                            let blocked = try await service.hasBlockedUser(otherUserId)
+                            message = "Blocked: \(blocked)"
+                        } catch {
+                            message = "Error: \(error.localizedDescription)"
+                        }
+                    }
+                }
+                .buttonStyle(.borderless)
+            }
+            
             if !message.isEmpty {
                 Section("Result") { Text(message) }
             }
@@ -93,6 +113,18 @@ struct FriendshipTestView: View {
             friendships = try await service.fetchMyFriendships()
         } catch {
             message = "Error: \(error.localizedDescription)"
+        }
+    }
+    
+    private func runQuery(_ query: @escaping () async throws -> [Friendship]) {
+        Task {
+            do {
+                let results = try await query()
+                let ids = results.map { $0.otherUserId(for: myId) ?? "?" }
+                message = "Found \(results.count): " + ids.joined(separator: ", ")
+            } catch {
+                message = "Error: \(error.localizedDescription)"
+            }
         }
     }
 }

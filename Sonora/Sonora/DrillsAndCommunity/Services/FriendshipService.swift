@@ -120,4 +120,51 @@ final class FriendshipService {
             .getDocuments()
         return try snapshot.documents.map { try $0.data(as: Friendship.self) }
     }
+
+    // MARK: - 5. Get all friends (accepted)
+
+    /// Accepted friendships for the current user.
+    func fetchFriends() async throws -> [Friendship] {
+        try await fetchMyFriendships().filter { $0.status == .accepted }
+    }
+
+    // MARK: - 6. Get friend requests
+
+    /// Pending requests other people sent to the current user.
+    func fetchIncomingRequests() async throws -> [Friendship] {
+        guard let uid = currentUserId else { throw FriendshipError.notSignedIn }
+        let snapshot = try await collection
+            .whereField("receiverId", isEqualTo: uid)
+            .whereField("status", isEqualTo: FriendshipStatus.pending.rawValue)
+            .getDocuments()
+        return try snapshot.documents.map { try $0.data(as: Friendship.self) }
+    }
+
+    /// Pending requests the current user sent that haven't been answered yet.
+    func fetchOutgoingRequests() async throws -> [Friendship] {
+        guard let uid = currentUserId else { throw FriendshipError.notSignedIn }
+        let snapshot = try await collection
+            .whereField("requesterId", isEqualTo: uid)
+            .whereField("status", isEqualTo: FriendshipStatus.pending.rawValue)
+            .getDocuments()
+        return try snapshot.documents.map { try $0.data(as: Friendship.self) }
+    }
+
+    // MARK: - 7. Check if A has blocked B
+
+    /// True only if `blockerId` is the one who blocked `blockedId`.
+    func hasBlocked(blocker blockerId: String, blocked blockedId: String) async throws -> Bool {
+        let snapshot = try await collection
+            .document(Self.pairId(blockerId, blockedId))
+            .getDocument()
+        guard snapshot.exists,
+              let friendship = try? snapshot.data(as: Friendship.self) else { return false }
+        return friendship.status == .blocked && friendship.blockedBy == blockerId
+    }
+
+    /// Convenience: has the current user blocked this person?
+    func hasBlockedUser(_ userId: String) async throws -> Bool {
+        guard let uid = currentUserId else { throw FriendshipError.notSignedIn }
+        return try await hasBlocked(blocker: uid, blocked: userId)
+    }
 }
