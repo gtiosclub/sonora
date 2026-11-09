@@ -1,5 +1,5 @@
 //
-//  SessionFeedbackView.swift
+//  CommunitySessionFeedbackView.swift
 //  Sonora
 //
 //  Created by Jocelyn Chen on 10/7/26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct SessionFeedbackView: View {
+struct CommunitySessionFeedbackView: View {
     @State private var viewModel: SessionFeedbackViewModel
 
     init(viewModel: SessionFeedbackViewModel) {
@@ -160,7 +160,7 @@ struct SessionFeedbackView: View {
                         .foregroundStyle(Color.sonoraBlue)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
-                Sparkline(values: viewModel.recentScores)
+                CommunitySparkline(values: viewModel.recentScores)
                     .frame(height: 70)
             }
         }
@@ -186,7 +186,7 @@ struct SessionFeedbackView: View {
 }
 
 #Preview {
-    SessionFeedbackView(
+    CommunitySessionFeedbackView(
         viewModel: SessionFeedbackViewModel(
             session: exampleSession,
             feedback: exampleFeedback

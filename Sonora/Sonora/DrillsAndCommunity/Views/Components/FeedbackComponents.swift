@@ -118,7 +118,7 @@ struct SummaryTag: View {
 // MARK: - Moments timeline
 struct MomentsTimeline: View {
     let duration: Int
-    let moment: ReviewMoment?
+    let moment: CommunityReviewMoment?
 
     var body: some View {
         GeometryReader { geo in
@@ -153,7 +153,7 @@ struct MomentsTimeline: View {
 }
 
 // MARK: - Sparkline
-struct Sparkline: View {
+struct CommunitySparkline: View {
     let values: [Int]
 
     var body: some View {
