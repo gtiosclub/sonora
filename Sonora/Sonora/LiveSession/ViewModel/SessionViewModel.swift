@@ -90,10 +90,15 @@ func joinQueue(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) as
 
 // Creates a new active session against the AI and saves it to the "Sessions" collection.
 // Returns the saved session.
-func createAISession(userId: String, mode: Session.Mode) async throws -> Session {
+func createAISession(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> Session {
+    // Debate sessions must have a selected topic
+    if mode == .debate && topic == nil {
+        throw JoinQueueError.missingDebateTopic
+    }
+
     let ref = Firestore.firestore().collection("Sessions").document()  // new empty doc: Firestore picks the ID
     let now = Date()
-    let session = Session(
+    var session = Session(
         id: ref.documentID,
         participants: [userId],
         status: .active,
@@ -103,6 +108,10 @@ func createAISession(userId: String, mode: Session.Mode) async throws -> Session
         startTime: now,
         createdAt: now
     )
+    // Save the selected debate question on the session so the AI knows what to argue
+    if mode == .debate, let topic = topic {
+        session.prompt = topic.question
+    }
 
     try ref.setData(from: session)   // Dates are saved as Firestore timestamps
     return session
