@@ -89,6 +89,7 @@ final class ProfileViewModel: ObservableObject {
     func makeEditViewModel() -> EditProfileViewModel {
         EditProfileViewModel(profile: profile, repository: repository) { [weak self] updated in
             self?.profile = updated
+            self?.showEditProfile = false
         }
     }
 

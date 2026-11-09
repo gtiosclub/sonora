@@ -15,7 +15,6 @@ struct ProfileView: View {
     }
 
     var body: some View {
-        NavigationStack {
             ScrollView {
                 VStack(spacing: 20) {
                     ScreenHeader(title: "Profile", onBack: viewModel.onBack) {
@@ -50,7 +49,6 @@ struct ProfileView: View {
             }
             .task { await viewModel.load() }
         }
-    }
 
     // MARK: - Sections
 
@@ -108,5 +106,7 @@ struct ProfileView: View {
 }
 
 #Preview {
-    ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))
+    NavigationStack {
+        ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))
+    }
 }

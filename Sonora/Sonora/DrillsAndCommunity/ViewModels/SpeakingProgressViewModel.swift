@@ -17,8 +17,9 @@ struct SkillSummary: Identifiable, Equatable {
     let tip: String
 
     var id: String { name }
-    var fraction: Double { Double(min(max(score, 0), 100)) / 100 }
-    var scoreText: String { "\(score)/100" }
+    var clampedScore: Int { min(max(score, 0), 100) }
+    var fraction: Double { Double(clampedScore) / 100 }
+    var scoreText: String { "\(clampedScore)/100" }
 }
 
 @MainActor
@@ -43,16 +44,20 @@ final class SpeakingProgressViewModel: ObservableObject {
     var latestSkills: [SkillSummary] {
         guard let last = sessionScores.last else { return [] }
         return [
-            summary("Content", Int(last.value(for: last.content))),
-            summary("Engagement", Int(last.value(for: last.engagement))),
-            summary("Clarity", Int(last.value(for: last.clarity))),
-            summary("Confidence", Int(last.value(for: last.confidence)))
+            summary("Content", last.content),
+            summary("Engagement", last.engagement),
+            summary("Clarity", last.clarity),
+            summary("Confidence", last.confidence)
         ]
     }
 
     // MARK: - Helpers
-    private func summary(_ name: String, _ score: Int) -> SkillSummary {
-        SkillSummary(name: name, score: score, tip: tip(for: name, score: score))
+    /// Uses the Skill's own summary (e.g. AI-generated) when present,
+    /// otherwise falls back to placeholder coaching text.
+    private func summary(_ name: String, _ skill: Skill) -> SkillSummary {
+        let stored = skill.summary.trimmingCharacters(in: .whitespacesAndNewlines)
+        let tipText = stored.isEmpty ? tip(for: name, score: skill.score) : stored
+        return SkillSummary(name: name, score: skill.score, tip: tipText)
     }
 
     /// Placeholder coaching text by score tier (low / medium / high).

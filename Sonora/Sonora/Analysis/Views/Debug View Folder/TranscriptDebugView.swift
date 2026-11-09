@@ -19,9 +19,15 @@ struct TranscriptDebugView: View {
                     .foregroundStyle((word.confidence ?? 1.0) < 0.7 ? .gray : .primary)
             }
         }
+        .safeAreaInset(edge: .top) {
+            Text("\(words.count) words")
+                .font(.headline)
+        }
         .onAppear {
             do {
-                let transcript = try MockTranscriptionService().loadTranscript(fromFixture:"sample_short")
+                let url = Bundle.main.url(forResource: "deepgram_fillers_on", withExtension: "json")!
+                let data = try Data(contentsOf: url)
+                let transcript = try DeepgramDecoder().decode(data)
                 words = transcript.words
             } catch {
                 print("Could not load transcript: \(error)")

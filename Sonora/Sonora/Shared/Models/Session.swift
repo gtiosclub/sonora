@@ -33,6 +33,7 @@ struct Session: Identifiable, Codable, Equatable {
     
     enum Status: String, Codable {
         case active, pending, deleted, completed
+        case declined
     }
     
     enum OpponentType: String, Codable {
@@ -42,9 +43,10 @@ struct Session: Identifiable, Codable, Equatable {
 }
 struct WaitingUser: Codable, Identifiable {
     @DocumentID var id: String?
-    var userID: String
+    var userId: String
     var mode: String
     var joinedAt: Date?
+    var topic: DebateTopic?
 }
 
 
