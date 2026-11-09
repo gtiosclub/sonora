@@ -33,6 +33,7 @@ struct Session: Identifiable, Codable, Equatable {
     
     enum Status: String, Codable {
         case active, pending, deleted, completed
+        case declined
     }
     
     enum OpponentType: String, Codable {

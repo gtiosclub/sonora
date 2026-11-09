@@ -12,6 +12,7 @@ struct TestView: View {
     @State private var output = "Tap a button to test"   // shows the result on screen
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
     @State private var randomMatchOutput = "Tap random match button to test"
+    @State private var createdSessionId = ""
 
     var body: some View {
         VStack {
@@ -161,23 +162,35 @@ struct TestView: View {
                             Task {
                                 do {
                                     let session = try await createAISession(userId: auth.currentUser?.id ?? "", mode: .interview)
+                                    createdSessionId = session.id
                                     output = "Created: \(session.id)"
                                 } catch {
                                     output = "ERROR: \(error.localizedDescription)"
                                 }
-                            }
+                            }	
                         }
 
                         Text(output)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
             
+            Button("Test Complete Just Created AI Session") {
+                Task {
+                    do {
+                        try await completeSession(sessionID: createdSessionId)
+                        output = "COMPLETED \(createdSessionId)!"
+                    } catch {
+                        output = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
+            
             Button("Test Complete Session") {
                 Task {
                     do {
-                        try await completeSession(sessionID: "LYtYJeufsUqX7lRXoN3S")
+                        try await completeSession(sessionID: "Cm5gIWdmyuNpGFMGgn7I")
                     } catch {
-                        print("Failed with error: \(error.localizedDescription)")
+                        output = "ERROR: \(error.localizedDescription)"
                     }
                 }
             }
