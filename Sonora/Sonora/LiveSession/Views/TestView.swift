@@ -159,26 +159,46 @@ struct TestView: View {
                     }
             }
             Button("Test Create AI Session") {
-                            Task {
-                                do {
-                                    let session = try await createAISession(userId: auth.currentUser?.id ?? "", mode: .interview)
-                                    createdSessionId = session.id
-                                    output = "Created: \(session.id)"
-                                } catch {
-                                    output = "ERROR: \(error.localizedDescription)"
-                                }
-                            }	
-                        }
-
-                        Text(output)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                Task {
+                    do {
+                        let session = try await createAISession(userId: auth.currentUser?.id ?? "", mode: .interview)
+                        createdSessionId = session.id
+                        output = "Created: \(session.id)"
+                    } catch {
+                        output = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
+            Text(output)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
             
             Button("Test Complete Session") {
                 Task {
                     do {
                         try await completeSession(sessionID: createdSessionId)
                         output = "COMPLETED \(createdSessionId)!"
+                    } catch {
+                        output = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
+            
+            Button("Test User Similarity") {
+                Task {
+                    do {
+                       
+                        let userA = "ZgzEUVYokfhBWcL8BgxhQVF3u1n1"
+                        
+                        let userB = "yjZDBcRicKdfk9ekR4z6ZwGhLJ52"
+                        
+                        let userNoScores = "cG9TJRamjBOTITyMgYnJEJPO8ki2"
+                        
+                        if let similarity = try await calcUserSimilarity(userID1: userA, userID2: userB) {
+                            output = String(format: "Similarity: %.2f (%.0f%% similar)", similarity, similarity * 100)
+                        } else {
+                            output = "Cannot determine similarity"
+                        }
                     } catch {
                         output = "ERROR: \(error.localizedDescription)"
                     }

@@ -295,3 +295,67 @@ func completeSession(sessionID: String) async throws{
     try await
         sessionRef.updateData(["durationSeconds" : elapsedTime])
 }
+
+func calcUserSimilarity(userID1: String, userID2: String) async throws -> Double? {
+    // access firestore
+    let db = Firestore.firestore()
+    
+    // get the skill profile document for user 1
+    let user1Ref = db.collection("SkillProfile").document(userID1)
+    let doc1 = try await user1Ref.getDocument()
+    
+    // get the skill profile document for user 2
+    let user2Ref = db.collection("SkillProfile").document(userID2)
+    let doc2 = try await user2Ref.getDocument()
+    
+    
+    // check to make sure both skill profile documents exist and get their data
+    guard let data1 = doc1.data(), let data2 = doc2.data() else {
+        return nil
+    }
+    	
+    let categories = ["clarity", "confidence", "content", "engaging"]
+    
+    var squaredDiffSum = 0.0
+    var validSkillCount = 0
+    
+    // loop through each skill category to calculate score differences
+    for category in categories {
+        var score1: Int?
+        var score2: Int?
+        
+        // extract score for user 1
+        if let categoryData = data1[category] as? [String: Any] {
+            if let score = categoryData["score"] as? Int {
+                score1 = score
+            }
+        }
+        
+        // extract score for user 2
+        if let categoryData = data2[category] as? [String: Any] {
+            if let score = categoryData["score"] as? Int {
+                score2 = score
+            }
+        }
+        
+        // compare if both users have a valid score in this category
+        if let s1 = score1, let s2 = score2 {
+            // normalize the difference
+            let diff = Double((s1 - s2)) / 100.0
+            squaredDiffSum += (diff * diff)
+            validSkillCount += 1
+        }
+    }
+    
+    // return if no scores were found
+    guard validSkillCount > 0 else {
+        return nil
+    }
+    
+    // calculate normalized Euclidean distance
+    let distance = sqrt(squaredDiffSum / Double(validSkillCount))
+    	
+    let similarity = 1.0 - distance
+    
+    return similarity
+}	
