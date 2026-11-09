@@ -90,10 +90,14 @@ func joinQueue(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) as
 
 // Creates a new active session against the AI and saves it to the "Sessions" collection.
 // Returns the saved session.
-func createAISession(userId: String, mode: Session.Mode) async throws -> Session {
+func createAISession(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> Session {
+    if mode == .debate && topic == nil {
+        throw JoinQueueError.missingDebateTopic
+    }
+
     let ref = Firestore.firestore().collection("Sessions").document()  // new empty doc: Firestore picks the ID
     let now = Date()
-    let session = Session(
+    var session = Session(
         id: ref.documentID,
         participants: [userId],
         status: .active,
@@ -103,6 +107,10 @@ func createAISession(userId: String, mode: Session.Mode) async throws -> Session
         startTime: now,
         createdAt: now
     )
+
+    if mode == .debate, let topic {
+        session.prompt = topic.question
+    }
 
     try ref.setData(from: session)   // Dates are saved as Firestore timestamps
     return session
@@ -131,6 +139,139 @@ func findWaitingMatch(userId: String, mode: Session.Mode, topic: DebateTopic? = 
         return nil
     }
     return try document.data(as: WaitingUser.self)
+}
+
+func findWaitingCandidates(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> [WaitingUser] {
+    if mode == .debate && topic == nil {
+        throw JoinQueueError.missingDebateTopic
+    }
+
+    var query: Query = Firestore.firestore()
+        .collection("WaitingUsers")
+        .whereField("mode", isEqualTo: mode.rawValue)
+
+    if mode == .debate, let topic {
+        query = query.whereField("topic", isEqualTo: topic.rawValue)
+    }
+
+    let snapshot = try await query.getDocuments()
+    return try snapshot.documents
+        .filter { $0.documentID != userId }
+        .map { try $0.data(as: WaitingUser.self) }
+}
+
+@discardableResult
+func listenForWaitingCandidates(
+    userId: String,
+    mode: Session.Mode,
+    topic: DebateTopic? = nil,
+    onChange: @escaping (Result<[WaitingUser], Error>) -> Void
+) -> ListenerRegistration {
+    var query: Query = Firestore.firestore()
+        .collection("WaitingUsers")
+        .whereField("mode", isEqualTo: mode.rawValue)
+
+    if mode == .debate, let topic {
+        query = query.whereField("topic", isEqualTo: topic.rawValue)
+    }
+
+    return query.addSnapshotListener { snapshot, error in
+        if let error {
+            onChange(.failure(error))
+            return
+        }
+        guard let snapshot else { return }
+
+        do {
+            let candidates = try snapshot.documents
+                .filter { $0.documentID != userId }
+                .map { try $0.data(as: WaitingUser.self) }
+            onChange(.success(candidates))
+        } catch {
+            onChange(.failure(error))
+        }
+    }
+}
+
+// Placeholder until the similarity scoring work is integrated.
+let matchSimilarityThreshold = 0.75
+
+func similarityScore(userId: String, candidateUserId: String) -> Double {
+    0
+}
+
+// Atomically claims both queue entries and creates the pending session. This prevents
+// two clients from matching the same waiting user at the same time.
+func claimWaitingCandidate(
+    userId: String,
+    candidate: WaitingUser,
+    mode: Session.Mode,
+    topic: DebateTopic? = nil
+) async throws -> Session? {
+    guard let candidateDocumentId = candidate.id else { return nil }
+    if mode == .debate && topic == nil {
+        throw JoinQueueError.missingDebateTopic
+    }
+
+    let db = Firestore.firestore()
+    let currentUserRef = db.collection("WaitingUsers").document(userId)
+    let candidateRef = db.collection("WaitingUsers").document(candidateDocumentId)
+    let sessionRef = db.collection("Sessions").document()
+    let now = Date()
+    var session = Session(
+        id: sessionRef.documentID,
+        participants: [candidate.userId, userId],
+        status: .pending,
+        acceptedBy: [],
+        mode: mode,
+        opponentType: .human,
+        startTime: nil,
+        createdAt: now
+    )
+    if mode == .debate, let topic {
+        session.prompt = topic.question
+    }
+
+    var sessionData: [String: Any] = [
+        "id": session.id,
+        "participants": session.participants,
+        "status": session.status.rawValue,
+        "acceptedBy": session.acceptedBy,
+        "mode": session.mode.rawValue,
+        "opponentType": session.opponentType.rawValue,
+        "startTime": NSNull(),
+        "createdAt": Timestamp(date: session.createdAt)
+    ]
+    if let prompt = session.prompt {
+        sessionData["prompt"] = prompt
+    }
+
+    let result = try await db.runTransaction { transaction, errorPointer in
+        do {
+            let currentUserSnapshot = try transaction.getDocument(currentUserRef)
+            let candidateSnapshot = try transaction.getDocument(candidateRef)
+            guard let currentUserData = currentUserSnapshot.data(),
+                  currentUserData["userId"] as? String == userId,
+                  currentUserData["mode"] as? String == mode.rawValue,
+                  mode != .debate || currentUserData["topic"] as? String == topic?.rawValue,
+                  let candidateData = candidateSnapshot.data(),
+                  candidateData["userId"] as? String == candidate.userId,
+                  candidateData["mode"] as? String == mode.rawValue,
+                  mode != .debate || candidateData["topic"] as? String == topic?.rawValue else {
+                return nil
+            }
+
+            transaction.deleteDocument(currentUserRef)
+            transaction.deleteDocument(candidateRef)
+            transaction.setData(sessionData, forDocument: sessionRef)
+            return session
+        } catch {
+            errorPointer?.pointee = error as NSError
+            return nil
+        }
+    }
+
+    return result as? Session
 }
 
 func cancelWaitingRequest(userId: String) async throws {
@@ -281,27 +422,26 @@ private enum SessionListenerError: LocalizedError {
 }
 
 func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> Session? {
-    // Unwraps waitingUser object
-    if let matchedUser = try await findWaitingMatch(userId: userId,  mode: mode, topic: topic) {
-        guard matchedUser.userId != userId else {
-            try await joinQueue(userId: userId, mode: mode)
-            return nil
-        }
-        // Remove the exact matched queue document before creating the session.
-        try await cancelWaitingRequest(userId: matchedUser.id ?? matchedUser.userId)
-        
-        // Creates a new session
-        let session = try await createPendingSession(
-            userID1: matchedUser.userId,
-            userID2: userId,
-            mode: mode,
-            topic: topic)
-        return session
-    } else {
-        // Adds user to queue if nil is unwrapped
-        try await joinQueue(userId: userId, mode: mode, topic: topic)
-        return nil
+    try await joinQueue(userId: userId, mode: mode, topic: topic)
+
+    let candidates = try await findWaitingCandidates(userId: userId, mode: mode, topic: topic)
+    let rankedCandidates = candidates.sorted {
+        similarityScore(userId: userId, candidateUserId: $0.userId)
+            > similarityScore(userId: userId, candidateUserId: $1.userId)
     }
+
+    for candidate in rankedCandidates where similarityScore(userId: userId, candidateUserId: candidate.userId) >= matchSimilarityThreshold {
+        if let session = try await claimWaitingCandidate(
+            userId: userId,
+            candidate: candidate,
+            mode: mode,
+            topic: topic
+        ) {
+            return session
+        }
+    }
+
+    return nil
 }
     
 func inviteFriendToSession(
