@@ -13,16 +13,16 @@ final class SessionFeedbackViewModel {
 
     // MARK: - Inputs
     let session: Session
-    let feedback: SessionFeedback
+    let feedback: CommunitySessionFeedback
 
     /// Navigation hooks, set by whoever presents this screen.
-    var onReviewMoment: (ReviewMoment) -> Void
+    var onReviewMoment: (CommunityReviewMoment) -> Void
     var onSeeRecommendations: () -> Void
 
     init(
         session: Session,
-        feedback: SessionFeedback,
-        onReviewMoment: @escaping (ReviewMoment) -> Void = { _ in },
+        feedback: CommunitySessionFeedback,
+        onReviewMoment: @escaping (CommunityReviewMoment) -> Void = { _ in },
         onSeeRecommendations: @escaping () -> Void = {}
     ) {
         self.session = session
@@ -73,13 +73,13 @@ final class SessionFeedbackViewModel {
 
     // MARK: - Moments
     var durationSeconds: Int { session.durationSeconds ?? 0 }
-    var featuredMoment: ReviewMoment? { feedback.moments.first }
+    var featuredMoment: CommunityReviewMoment? { feedback.moments.first }
 
-    func timestamp(for moment: ReviewMoment) -> String {
+    func timestamp(for moment: CommunityReviewMoment) -> String {
         String(format: "%d:%02d", moment.startSeconds / 60, moment.startSeconds % 60)
     }
 
-    func reviewTapped(_ moment: ReviewMoment) { onReviewMoment(moment) }
+    func reviewTapped(_ moment: CommunityReviewMoment) { onReviewMoment(moment) }
 
     // MARK: - Progress
     var recentScores: [Int] { feedback.recentScores }

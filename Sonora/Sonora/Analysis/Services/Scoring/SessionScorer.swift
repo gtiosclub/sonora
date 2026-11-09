@@ -17,12 +17,12 @@ import Foundation
 ///   - Confidence › posture stability (needs tuned sway/tilt thresholds)
 ///   - Engaging › gesture use (needs a waist reference joint) and audience hooks (LLM)
 ///   - Content (entirely LLM)
-/// Those are left out of their category averages; `content` stays 0 and is excluded
+/// Those are left out of their category averages; `content` stays nil and is excluded
 /// from the overall until the LLM layer exists.
 struct SessionScorer {
 
     struct Result {
-        let scores: SessionScores   // content is 0 until the LLM layer lands
+        let scores: SessionScores   // content is nil until the LLM layer lands
         let overall: Int            // weighted over the categories we can compute
         let metrics: [Metric]
         let findings: [Finding]
@@ -92,11 +92,20 @@ struct SessionScorer {
         var confidenceBands: [Band] = []
 
         if let video, !video.faces.isEmpty {
-            let facing = video.faces.filter { abs($0.face.yaw) <= 15 && abs($0.face.pitch) <= 10 }.count
+            let facing = video.faces.filter { Self.isFacingCamera($0) }.count
             let eyeContact = Double(facing) / Double(video.faces.count) * 100
             let eyeBand: Band = eyeContact > 70 ? .good : (eyeContact >= 50 ? .ok : .needsWork)
             confidenceBands.append(eyeBand)
             metrics.append(Metric(name: "Eye contact (%)", value: eyeContact))
+
+            findings += Self.lookAwayRuns(video.faces).map { start, duration in
+                Finding(start: start, duration: duration,
+                        message: "Looked away for \(Int(duration)) s")
+            }
+            if eyeContact < 50 {
+                findings.append(Finding(start: 0, duration: video.duration,
+                                        message: "Low eye contact overall (\(Int(eyeContact))%)"))
+            }
         }
 
         let hedges = Self.hedgeCount(words)
@@ -129,7 +138,7 @@ struct SessionScorer {
             engagement: Self.toInt(engaging),
             confidence: Self.toInt(confidence),
             clarity: Self.toInt(clarity),
-            content: 0 // not scored until the LLM layer exists
+            content: nil // not scored until the LLM layer exists
         )
 
         let overall = Self.overall(
@@ -199,6 +208,40 @@ struct SessionScorer {
             }
         }
         closeRun()
+        return runs
+    }
+
+    private static func isFacingCamera(_ face: VideoPipeline.TimedFace) -> Bool {
+        abs(face.face.yaw) <= 15 && abs(face.face.pitch) <= 10
+    }
+
+    /// Stretches of `minSeconds`+ where consecutive face readings are turned away.
+    /// `faces` skips frames with no face, so spacing isn't fixed: a run starts at its
+    /// first away reading and ends at the next reading after it (or its last one).
+    private static func lookAwayRuns(
+        _ faces: [VideoPipeline.TimedFace], minSeconds: Double = 3
+    ) -> [(start: Double, duration: Double)] {
+        let sorted = faces.sorted { $0.time < $1.time }
+        var runs: [(start: Double, duration: Double)] = []
+        var runStart: Double?
+        var lastAway = 0.0
+
+        func closeRun(at end: Double) {
+            if let start = runStart, end - start >= minSeconds {
+                runs.append((start, end - start))
+            }
+            runStart = nil
+        }
+
+        for face in sorted {
+            if isFacingCamera(face) {
+                closeRun(at: face.time)
+            } else {
+                if runStart == nil { runStart = face.time }
+                lastAway = face.time
+            }
+        }
+        closeRun(at: lastAway)
         return runs
     }
 

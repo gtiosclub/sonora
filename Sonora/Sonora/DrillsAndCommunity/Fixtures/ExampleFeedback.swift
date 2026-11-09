@@ -19,7 +19,7 @@ let exampleSession = Session(
     durationSeconds: 402
 )
 
-let exampleFeedback = SessionFeedback(
+let exampleFeedback = CommunitySessionFeedback(
     id: "feedback1",
     sessionId: "session1",
     overallScore: 84,
@@ -31,7 +31,7 @@ let exampleFeedback = SessionFeedback(
     voiceModulation: 0.55,
     posture: 0.88,
     moments: [
-        ReviewMoment(
+        CommunityReviewMoment(
             id: "moment1",
             startSeconds: 161,
             endSeconds: 200,

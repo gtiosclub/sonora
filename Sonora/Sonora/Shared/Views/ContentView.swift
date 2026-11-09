@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AuthManager.self) private var auth
+    @State private var showPairing = false
 
     var body: some View {
         VStack {
@@ -39,12 +40,12 @@ struct ContentView: View {
                 NavigationLink(destination: DrillsCommunityTestView()) {
                     Text("Go to Drills & Community Test View")
                 }
+                
                 NavigationLink(destination: ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))) {
                     Text("Go to Profile View")
-                
-                NavigationLink(destination: PairingSetupView()) {
-                    Text("Go to Live Session Pairing View")
                 }
+                
+                Button("Go to Live Session Pairing View") { showPairing = true }
 
                 NavigationLink(destination: SessionReviewView(
                     videoURL: Bundle.main.url(forResource: "sample_presentation", withExtension: "mov"),
@@ -53,6 +54,9 @@ struct ContentView: View {
                     Text("Go to Analysis Feedback View")
                 }
             }
+        }
+        .fullScreenCover(isPresented: $showPairing) {
+            PairingSetupView()
         }
         .padding()
     }
