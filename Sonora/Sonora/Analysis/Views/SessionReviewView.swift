@@ -19,7 +19,7 @@ struct SessionReviewView: View {
     @State private var feedback = SessionFeedback.loading
     @State private var transcript = Transcript(words: [])
     @State private var report = AnalysisReport(
-        scores: SessionScores(engagement: 0, confidence: 0, clarity: 0, content: 0),
+        scores: SessionScores(engagement: 0, confidence: 0, clarity: 0, content: nil),
         summary: "",
         metrics: [],
         findings: []

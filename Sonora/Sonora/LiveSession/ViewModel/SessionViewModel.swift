@@ -7,41 +7,30 @@
 
 import FirebaseFirestore
 
-func acceptSession(userId: String, sessionID: String) async throws{
-    // async means the function performs asynchronous work
-    // throws means the function can pass errors back to whoever called it
-    
-    //access firestore
+func acceptSession(userId: String, sessionID: String) async throws {
     let db = Firestore.firestore()
-    
-    // Get the session document using its ID
-    let sessionRef = db.collection("Sessions").document(sessionID)
-    let document = try await sessionRef.getDocument()
-    
-    // check to make sure the session exists
-    guard document.exists else{
-        return
-    }
-    
-    // Make sure the user is a participant in the session
-    guard let participants = document.data()?["participants"] as? [String],
-          participants.contains(userId) else {
-        return
-    }
-    
-    // Add the user to the list of users who accepted the session
-    try await sessionRef.updateData(["acceptedBy": FieldValue.arrayUnion([userId])])
-    
-    // Get the updated session data
-    let updatedDocument = try await sessionRef.getDocument()
-    // Get the updated list of users who accepted
-    guard let acceptedBy = updatedDocument.data()?["acceptedBy"] as? [String] else {
-        return
-    }
-    
-    // Start the session once all participants have accepted
-    if acceptedBy.count == participants.count {
-        try await sessionRef.updateData(["status":"active"])
+    let ref = db.collection("Sessions").document(sessionID)
+
+    _ = try await db.runTransaction { txn, errorPointer in
+        let snap: DocumentSnapshot
+        do { snap = try txn.getDocument(ref) }
+        catch { errorPointer?.pointee = error as NSError; return nil }
+
+        guard let data = snap.data(),
+              let participants = data["participants"] as? [String],
+              participants.contains(userId),
+              (data["status"] as? String) == "pending" else { return nil }
+
+        var accepted = data["acceptedBy"] as? [String] ?? []
+        if !accepted.contains(userId) { accepted.append(userId) }
+
+        var update: [String: Any] = ["acceptedBy": accepted]
+        if Set(accepted) == Set(participants) {
+            update["status"] = "active"
+            update["startTime"] = Timestamp(date: Date())
+        }
+        txn.updateData(update, forDocument: ref)
+        return nil
     }
 }
 
@@ -199,6 +188,98 @@ func createPendingSession(
     return session
 }
 
+// Observes sessions containing this user, including pending and terminal status changes.
+@discardableResult
+func listenForUserSessions(
+    userId: String,
+    since: Date,
+    onChange: @escaping (Result<[Session], Error>) -> Void
+) -> ListenerRegistration {
+    Firestore.firestore()
+        .collection("Sessions")
+        .whereField("participants", arrayContains: userId)
+        .addSnapshotListener { snapshot, error in
+            if let error { onChange(.failure(error)); return }
+            guard let snapshot else { return }
+            let sessions = snapshot.documents
+                .compactMap { try? decodeSession($0) }
+                .filter { $0.createdAt >= since.addingTimeInterval(-5) }  // small clock-skew buffer
+            onChange(.success(sessions))
+        }
+}
+
+// Observes status and participant changes for a single session.
+@discardableResult
+func listenToSession(
+    sessionId: String,
+    onChange: @escaping (Result<Session, Error>) -> Void
+) -> ListenerRegistration {
+    Firestore.firestore()
+        .collection("Sessions")
+        .document(sessionId)
+        .addSnapshotListener { snapshot, error in
+            if let error {
+                onChange(.failure(error))
+                return
+            }
+
+            guard let snapshot, snapshot.exists else { return }
+            do {
+                onChange(.success(try decodeSession(snapshot)))
+            } catch {
+                onChange(.failure(error))
+            }
+        }
+}
+
+private func decodeSession(_ document: DocumentSnapshot) throws -> Session {
+    if var session = try? document.data(as: Session.self) {
+        session.id = document.documentID
+        return session
+    }
+
+    guard let data = document.data(),
+          let participants = data["participants"] as? [String],
+          let statusRawValue = data["status"] as? String,
+          let status = Session.Status(rawValue: statusRawValue),
+          let modeRawValue = data["mode"] as? String,
+          let mode = Session.Mode(rawValue: modeRawValue) else {
+        throw SessionListenerError.invalidSessionDocument
+    }
+
+    let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? .distantPast
+    let startTime = (data["startTime"] as? Timestamp)?.dateValue()
+    let opponentType = (data["opponentType"] as? String)
+        .flatMap(Session.OpponentType.init(rawValue:)) ?? .human
+
+    return Session(
+        id: document.documentID,
+        participants: participants,
+        status: status,
+        acceptedBy: data["acceptedBy"] as? [String] ?? [],
+        aIOpponent: nil,
+        mode: mode,
+        opponentType: opponentType,
+        startTime: startTime,
+        createdAt: createdAt,
+        durationSeconds: data["durationSeconds"] as? Int,
+        topic: nil,
+        sessionSkillScore: nil,
+        summary: data["summary"] as? String,
+        prompt: data["prompt"] as? String,
+        analysis: data["analysis"] as? String,
+        scores: data["scores"] as? [Int]
+    )
+}
+
+private enum SessionListenerError: LocalizedError {
+    case invalidSessionDocument
+
+    var errorDescription: String? {
+        "The session document is missing required fields."
+    }
+}
+
 func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> Session? {
     // Unwraps waitingUser object
     if let matchedUser = try await findWaitingMatch(userId: userId,  mode: mode, topic: topic) {
@@ -228,17 +309,67 @@ func inviteFriendToSession(
         toUserId: String,
         mode: Session.Mode
     ) async throws -> String {
-        
-        let db = Firestore.firestore()
-        
-        let documentRef = try await db.collection("Sessions")
-            .addDocument(data: [
-                "participants": [fromUserId, toUserId],
-                "acceptedBy": [fromUserId],
-                "mode": mode.rawValue,
-                "status": "pending"
-            ])
-        
+
+        let documentRef = Firestore.firestore().collection("Sessions").document()
+        let now = Date()
+        let session = Session(
+            id: documentRef.documentID,
+            participants: [fromUserId, toUserId],
+            status: .pending,
+            acceptedBy: [fromUserId],
+            mode: mode,
+            opponentType: .human,
+            startTime: nil,
+            createdAt: now
+        )
+        try documentRef.setData(from: session)
         return documentRef.documentID
 }
 
+// Validates that a session with that session id exists and is currently active
+// Sets the status of that function to completed
+// Populates end time and sets duration in seconds
+func completeSession(sessionID: String) async throws {
+    let db = Firestore.firestore()
+    let sessionRef = db.collection("Sessions").document(sessionID)
+
+    let document = try await sessionRef.getDocument()
+
+    guard document.exists else {
+        return
+    }
+
+    let status = document.get("status") as? String
+
+    guard status == "active" else {
+        return
+    }
+
+    // Get start time and calculate duration if it exists
+    if let startTime = document.get("startTime") as? Timestamp {
+        let startDate = startTime.dateValue()
+        let endDate = Date.now
+        let duration = endDate.timeIntervalSince(startDate)
+
+        try await sessionRef.updateData([
+            "durationSeconds": duration,
+            "endTime": Timestamp(date: endDate)
+        ])
+    }
+
+    // Mark session as completed
+    try await sessionRef.updateData([
+        "status": "completed"
+    ])
+
+    // Increment session count for each participant
+    if let participants = document.get("participants") as? [String] {
+        for userId in participants {
+            let userRef = db.collection("Users").document(userId)
+
+            try await userRef.setData([
+                "sessionCount": FieldValue.increment(Int64(1))
+            ], merge: true)
+        }
+    }
+}

@@ -13,8 +13,10 @@ struct RootView: View {
     var body: some View {
         if auth.isSignedIn {
             ContentView()
+
         } else if auth.isLoading {
             ProgressView()
+                .preferredColorScheme(.light)
         } else {
             LoginView()
         }
