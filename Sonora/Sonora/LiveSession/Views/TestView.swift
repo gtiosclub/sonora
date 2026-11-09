@@ -173,7 +173,7 @@ struct TestView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             
-            Button("Test Complete Just Created AI Session") {
+            Button("Test Complete Session") {
                 Task {
                     do {
                         try await completeSession(sessionID: createdSessionId)
