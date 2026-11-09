@@ -1,5 +1,5 @@
 //
-//  Friendship.swift
+//  CommunityFriendship.swift
 //  Sonora
 //
 //  Created by Jocelyn Chen on 10/27/26.
@@ -8,16 +8,16 @@
 import Foundation
 import FirebaseFirestore
 
-enum FriendshipStatus: String, Codable {
+enum CommunityFriendshipStatus: String, Codable {
     case pending, accepted, blocked
 }
 
-struct Friendship: Identifiable, Codable, Equatable {
+struct CommunityFriendship: Identifiable, Codable, Equatable {
     @DocumentID var id: String?
     let requesterId: String
     let receiverId: String
     let participants: [String]
-    var status: FriendshipStatus
+    var status: CommunityFriendshipStatus
     var blockedBy: String?
     var createdAt: Date?
     var updatedAt: Date?

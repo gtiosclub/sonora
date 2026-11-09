@@ -51,7 +51,7 @@ final class FriendshipService {
             "requesterId": uid,
             "receiverId": receiverId,
             "participants": [uid, receiverId],
-            "status": FriendshipStatus.pending.rawValue,
+            "status": CommunityFriendshipStatus.pending.rawValue,
             "blockedBy": NSNull(),
             "createdAt": FieldValue.serverTimestamp(),
             "updatedAt": FieldValue.serverTimestamp()
@@ -65,7 +65,7 @@ final class FriendshipService {
 
         // Rules enforce: only the receiver, and only while pending.
         try await collection.document(friendshipId).updateData([
-            "status": FriendshipStatus.accepted.rawValue,
+            "status": CommunityFriendshipStatus.accepted.rawValue,
             "updatedAt": FieldValue.serverTimestamp()
         ])
     }
@@ -80,12 +80,12 @@ final class FriendshipService {
         let snapshot = try await ref.getDocument()
 
         if snapshot.exists {
-            if let existing = try? snapshot.data(as: Friendship.self),
+            if let existing = try? snapshot.data(as: CommunityFriendship.self),
                existing.status == .blocked, existing.blockedBy != uid {
                 throw FriendshipError.unavailable
             }
             try await ref.updateData([
-                "status": FriendshipStatus.blocked.rawValue,
+                "status": CommunityFriendshipStatus.blocked.rawValue,
                 "blockedBy": uid,
                 "updatedAt": FieldValue.serverTimestamp()
             ])
@@ -94,7 +94,7 @@ final class FriendshipService {
                 "requesterId": uid,
                 "receiverId": targetId,
                 "participants": [uid, targetId],
-                "status": FriendshipStatus.blocked.rawValue,
+                "status": CommunityFriendshipStatus.blocked.rawValue,
                 "blockedBy": uid,
                 "createdAt": FieldValue.serverTimestamp(),
                 "updatedAt": FieldValue.serverTimestamp()
@@ -113,41 +113,41 @@ final class FriendshipService {
     // MARK: - Reading
 
     /// All friendships (any status) involving the current user.
-    func fetchMyFriendships() async throws -> [Friendship] {
+    func fetchMyFriendships() async throws -> [CommunityFriendship] {
         guard let uid = currentUserId else { throw FriendshipError.notSignedIn }
         let snapshot = try await collection
             .whereField("participants", arrayContains: uid)
             .getDocuments()
-        return try snapshot.documents.map { try $0.data(as: Friendship.self) }
+        return try snapshot.documents.map { try $0.data(as: CommunityFriendship.self) }
     }
 
     // MARK: - 5. Get all friends (accepted)
 
     /// Accepted friendships for the current user.
-    func fetchFriends() async throws -> [Friendship] {
+    func fetchFriends() async throws -> [CommunityFriendship] {
         try await fetchMyFriendships().filter { $0.status == .accepted }
     }
 
     // MARK: - 6. Get friend requests
 
     /// Pending requests other people sent to the current user.
-    func fetchIncomingRequests() async throws -> [Friendship] {
+    func fetchIncomingRequests() async throws -> [CommunityFriendship] {
         guard let uid = currentUserId else { throw FriendshipError.notSignedIn }
         let snapshot = try await collection
             .whereField("receiverId", isEqualTo: uid)
-            .whereField("status", isEqualTo: FriendshipStatus.pending.rawValue)
+            .whereField("status", isEqualTo: CommunityFriendshipStatus.pending.rawValue)
             .getDocuments()
-        return try snapshot.documents.map { try $0.data(as: Friendship.self) }
+        return try snapshot.documents.map { try $0.data(as: CommunityFriendship.self) }
     }
 
     /// Pending requests the current user sent that haven't been answered yet.
-    func fetchOutgoingRequests() async throws -> [Friendship] {
+    func fetchOutgoingRequests() async throws -> [CommunityFriendship] {
         guard let uid = currentUserId else { throw FriendshipError.notSignedIn }
         let snapshot = try await collection
             .whereField("requesterId", isEqualTo: uid)
-            .whereField("status", isEqualTo: FriendshipStatus.pending.rawValue)
+            .whereField("status", isEqualTo: CommunityFriendshipStatus.pending.rawValue)
             .getDocuments()
-        return try snapshot.documents.map { try $0.data(as: Friendship.self) }
+        return try snapshot.documents.map { try $0.data(as: CommunityFriendship.self) }
     }
 
     // MARK: - 7. Check if A has blocked B
@@ -158,7 +158,7 @@ final class FriendshipService {
             .document(Self.pairId(blockerId, blockedId))
             .getDocument()
         guard snapshot.exists,
-              let friendship = try? snapshot.data(as: Friendship.self) else { return false }
+              let friendship = try? snapshot.data(as: CommunityFriendship.self) else { return false }
         return friendship.status == .blocked && friendship.blockedBy == blockerId
     }
 
