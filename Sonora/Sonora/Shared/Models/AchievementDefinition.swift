@@ -21,5 +21,6 @@ struct AchievementDefinition: Identifiable, Codable, Equatable {
         case xp
         case drills
         case weeklyWins
+        case streak
     }
 }

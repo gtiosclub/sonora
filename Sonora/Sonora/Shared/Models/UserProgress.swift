@@ -7,8 +7,8 @@ import Foundation
 
 /// A user's cumulative totals used to evaluate achievement requirements.
 struct UserProgress: Identifiable, Codable, Equatable {
-    var id: String { userId }
-    var userId: String
+    /// Matches the user's ID.
+    var id: String
 
     var completedSessions: Int = 0
 
