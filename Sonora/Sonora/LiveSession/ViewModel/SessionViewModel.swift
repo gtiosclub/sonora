@@ -382,3 +382,64 @@ func completeSession(sessionID: String) async throws {
         }
     }
 }
+
+func calcUserSimilarity(userID1: String, userID2: String) async throws -> Double? {
+    // access firestore
+    let db = Firestore.firestore()
+    
+    // get the skill profile document for user 1
+    let user1Ref = db.collection("SkillProfile").document(userID1)
+    let doc1 = try await user1Ref.getDocument()
+    
+    // get the skill profile document for user 2
+    let user2Ref = db.collection("SkillProfile").document(userID2)
+    let doc2 = try await user2Ref.getDocument()
+    
+    
+    let data1 = doc1.data() ?? [:]
+    let data2 = doc2.data() ?? [:]
+    	
+    let categories = ["clarity", "confidence", "content", "engaging"]
+    
+    let baseline = 50.0
+    
+    var squaredDiffSum = 0.0
+    var validSkillCount = 0
+    
+    // loop through each skill category to calculate score differences
+    for category in categories {
+        var score1: Double = baseline
+        var score2: Double = baseline
+        
+        // extract score for user 1
+        if let categoryData = data1[category] as? [String: Any] {
+            if let score = categoryData["score"] as? Int {
+                score1 = Double(score)
+            }
+        }
+        
+        // extract score for user 2
+        if let categoryData = data2[category] as? [String: Any] {
+            if let score = categoryData["score"] as? Int {
+                score2 = Double(score)
+            }	
+        }
+        
+        // compare both users and normalize the difference
+        let diff = (score1 - score2) / 100.0
+        squaredDiffSum += (diff * diff)
+        validSkillCount += 1
+    }
+    
+    // safeguard to prevent dividing by 0
+    guard validSkillCount > 0 else {
+        return nil
+    }
+    
+    // calculate normalized Euclidean distance
+    let distance = sqrt(squaredDiffSum / Double(validSkillCount))
+    	
+    let similarity = 1.0 - distance
+    
+    return similarity
+}	
