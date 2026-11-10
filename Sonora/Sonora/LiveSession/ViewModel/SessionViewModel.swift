@@ -303,45 +303,42 @@ func calcUserSimilarity(userID1: String, userID2: String) async throws -> Double
     let doc2 = try await user2Ref.getDocument()
     
     
-    // check to make sure both skill profile documents exist and get their data
-    guard let data1 = doc1.data(), let data2 = doc2.data() else {
-        return nil
-    }
+    let data1 = doc1.data() ?? [:]
+    let data2 = doc2.data() ?? [:]
     	
     let categories = ["clarity", "confidence", "content", "engaging"]
+    
+    let baseline = 50.0
     
     var squaredDiffSum = 0.0
     var validSkillCount = 0
     
     // loop through each skill category to calculate score differences
     for category in categories {
-        var score1: Int?
-        var score2: Int?
+        var score1: Double = baseline
+        var score2: Double = baseline
         
         // extract score for user 1
         if let categoryData = data1[category] as? [String: Any] {
             if let score = categoryData["score"] as? Int {
-                score1 = score
+                score1 = Double(score)
             }
         }
         
         // extract score for user 2
         if let categoryData = data2[category] as? [String: Any] {
             if let score = categoryData["score"] as? Int {
-                score2 = score
-            }
+                score2 = Double(score)
+            }	
         }
         
-        // compare if both users have a valid score in this category
-        if let s1 = score1, let s2 = score2 {
-            // normalize the difference
-            let diff = Double((s1 - s2)) / 100.0
-            squaredDiffSum += (diff * diff)
-            validSkillCount += 1
-        }
+        // compare both users and normalize the difference
+        let diff = (score1 - score2) / 100.0
+        squaredDiffSum += (diff * diff)
+        validSkillCount += 1
     }
     
-    // return if no scores were found
+    // safeguard to prevent dividing by 0
     guard validSkillCount > 0 else {
         return nil
     }
