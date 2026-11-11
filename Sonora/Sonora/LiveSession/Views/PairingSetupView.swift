@@ -16,7 +16,6 @@ struct PairingSetupView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var practiceType = "Select"
     @State private var topic = ""
-    @State private var sessionLength = 10
     @State private var router = PairingNavigationRouter()
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
     @State private var practicePartner = "Live person"
@@ -32,8 +31,6 @@ struct PairingSetupView: View {
     ]
 
     let practicePartners = ["Live person", "AI partner"]
-    
-    let sessionLengths = [5, 10, 20, 30]
     
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -129,33 +126,6 @@ struct PairingSetupView: View {
                                 RoundedRectangle(cornerRadius: 6)
                                     .stroke(Color.gray)
                             )
-                        }
-                    }
-                    
-                    // Session length
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("SESSION LENGTH")
-                            .font(.caption)
-                        
-                        HStack(spacing: 8) {
-                            ForEach(sessionLengths, id: \.self) { length in
-                                Button("\(length) mins") {
-                                    sessionLength = length
-                                }
-                                .font(.caption)
-                                .padding(10)
-                                .foregroundColor(
-                                    sessionLength == length ? .white : .black
-                                )
-                                .background(
-                                    sessionLength == length ? Color.black : Color.white
-                                )
-                                .cornerRadius(6)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(Color.gray)
-                                )
-                            }
                         }
                     }
                     
