@@ -12,7 +12,7 @@ struct RootView: View {
 
     var body: some View {
         if auth.isSignedIn {
-            ContentView()
+            MainTabView()
 
         } else if auth.isLoading {
             ProgressView()
