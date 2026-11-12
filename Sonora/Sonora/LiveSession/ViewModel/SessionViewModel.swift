@@ -193,11 +193,51 @@ func listenForWaitingCandidates(
     }
 }
 
-// Placeholder until the similarity scoring work is integrated.
 let matchSimilarityThreshold = 0.75
 
-func similarityScore(userId: String, candidateUserId: String) -> Double {
-    0
+func rankWaitingCandidates(
+    userID: String,
+    candidates: [WaitingUser]
+) async throws -> [(candidate: WaitingUser, score: Double)] {
+    let maxConcurrentLookups = 8
+
+    return try await withThrowingTaskGroup(of: (Int, Double).self) { group in
+        var scores = Array(repeating: 0.0, count: candidates.count)
+        var nextIndex = 0
+
+        for index in 0..<min(maxConcurrentLookups, candidates.count) {
+            let candidateUserID = candidates[index].userId
+            group.addTask {
+                let score = try await calcUserSimilarity(
+                    userID1: userID,
+                    userID2: candidateUserID
+                ) ?? 0
+                return (index, score)
+            }
+            nextIndex += 1
+        }
+
+        while let (index, score) = try await group.next() {
+            scores[index] = score
+
+            if nextIndex < candidates.count {
+                let candidateIndex = nextIndex
+                let candidateUserID = candidates[candidateIndex].userId
+                group.addTask {
+                    let score = try await calcUserSimilarity(
+                        userID1: userID,
+                        userID2: candidateUserID
+                    ) ?? 0
+                    return (candidateIndex, score)
+                }
+                nextIndex += 1
+            }
+        }
+
+        return candidates.enumerated()
+            .map { (candidate: $0.element, score: scores[$0.offset]) }
+            .sorted { $0.score > $1.score }
+    }
 }
 
 // Atomically claims both queue entries and creates the pending session. This prevents
@@ -425,15 +465,12 @@ func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? 
     try await joinQueue(userId: userId, mode: mode, topic: topic)
 
     let candidates = try await findWaitingCandidates(userId: userId, mode: mode, topic: topic)
-    let rankedCandidates = candidates.sorted {
-        similarityScore(userId: userId, candidateUserId: $0.userId)
-            > similarityScore(userId: userId, candidateUserId: $1.userId)
-    }
+    let rankedCandidates = try await rankWaitingCandidates(userID: userId, candidates: candidates)
 
-    for candidate in rankedCandidates where similarityScore(userId: userId, candidateUserId: candidate.userId) >= matchSimilarityThreshold {
+    for rankedCandidate in rankedCandidates where rankedCandidate.score >= matchSimilarityThreshold {
         if let session = try await claimWaitingCandidate(
             userId: userId,
-            candidate: candidate,
+            candidate: rankedCandidate.candidate,
             mode: mode,
             topic: topic
         ) {
@@ -512,4 +549,65 @@ func completeSession(sessionID: String) async throws {
             ], merge: true)
         }
     }
+}
+
+func calcUserSimilarity(userID1: String, userID2: String) async throws -> Double? {
+    // access firestore
+    let db = Firestore.firestore()
+
+    // get the skill profile document for user 1
+    let user1Ref = db.collection("SkillProfile").document(userID1)
+    let doc1 = try await user1Ref.getDocument()
+
+    // get the skill profile document for user 2
+    let user2Ref = db.collection("SkillProfile").document(userID2)
+    let doc2 = try await user2Ref.getDocument()
+
+
+    let data1 = doc1.data() ?? [:]
+    let data2 = doc2.data() ?? [:]
+
+    let categories = ["clarity", "confidence", "content", "engaging"]
+
+    let baseline = 50.0
+
+    var squaredDiffSum = 0.0
+    var validSkillCount = 0
+
+    // loop through each skill category to calculate score differences
+    for category in categories {
+        var score1: Double = baseline
+        var score2: Double = baseline
+
+        // extract score for user 1
+        if let categoryData = data1[category] as? [String: Any] {
+            if let score = categoryData["score"] as? Int {
+                score1 = Double(score)
+            }
+        }
+
+        // extract score for user 2
+        if let categoryData = data2[category] as? [String: Any] {
+            if let score = categoryData["score"] as? Int {
+                score2 = Double(score)
+            }
+        }
+
+        // compare both users and normalize the difference
+        let diff = (score1 - score2) / 100.0
+        squaredDiffSum += (diff * diff)
+        validSkillCount += 1
+    }
+
+    // safeguard to prevent dividing by 0
+    guard validSkillCount > 0 else {
+        return nil
+    }
+
+    // calculate normalized Euclidean distance
+    let distance = sqrt(squaredDiffSum / Double(validSkillCount))
+
+    let similarity = 1.0 - distance
+
+    return similarity
 }

@@ -19,6 +19,7 @@ struct WaitingView: View {
     @State private var hasReachedDeadline = false
     @State private var hasPromptedForEmptyQueue = false
     @State private var isClaimingMatch = false
+    @State private var pendingCandidateUpdate: [WaitingUser]?
 
     @State private var sessionListener: ListenerRegistration?
     @State private var queueListener: ListenerRegistration?
@@ -130,6 +131,11 @@ struct WaitingView: View {
     private func handleCandidateUpdate(_ candidates: [WaitingUser]) async {
         guard isWaiting else { return }
 
+        if isClaimingMatch {
+            pendingCandidateUpdate = candidates
+            return
+        }
+
         guard !candidates.isEmpty else {
             if !hasPromptedForEmptyQueue {
                 hasPromptedForEmptyQueue = true
@@ -175,23 +181,41 @@ struct WaitingView: View {
     }
 
     private func tryMatching(_ candidates: [WaitingUser], requireThreshold: Bool) async {
-        guard !isClaimingMatch, isWaiting, let userId = auth.userID else { return }
-        isClaimingMatch = true
-        defer { isClaimingMatch = false }
-
-        let rankedCandidates = candidates.sorted {
-            similarityScore(userId: userId, candidateUserId: $0.userId)
-                > similarityScore(userId: userId, candidateUserId: $1.userId)
+        guard isWaiting, let userId = auth.userID else { return }
+        guard !isClaimingMatch else {
+            pendingCandidateUpdate = candidates
+            return
         }
 
-        for candidate in rankedCandidates {
-            let score = similarityScore(userId: userId, candidateUserId: candidate.userId)
-            if requireThreshold && score < matchSimilarityThreshold { break }
+        isClaimingMatch = true
+        defer {
+            isClaimingMatch = false
+            if let latestCandidates = pendingCandidateUpdate {
+                pendingCandidateUpdate = nil
+                Task { @MainActor in
+                    await handleCandidateUpdate(latestCandidates)
+                }
+            }
+        }
+
+        let rankedCandidates: [(candidate: WaitingUser, score: Double)]
+        do {
+            rankedCandidates = try await rankWaitingCandidates(
+                userID: userId,
+                candidates: candidates
+            )
+        } catch {
+            listenerError = "Couldn't calculate match scores: \(error.localizedDescription)"
+            return
+        }
+
+        for rankedCandidate in rankedCandidates {
+            if requireThreshold && rankedCandidate.score < matchSimilarityThreshold { break }
 
             do {
                 guard let session = try await claimWaitingCandidate(
                     userId: userId,
-                    candidate: candidate,
+                    candidate: rankedCandidate.candidate,
                     mode: mode,
                     topic: topic
                 ) else { continue }
