@@ -18,6 +18,8 @@ final class ProfileViewModel: ObservableObject {
     @Published private(set) var profile: UserProfile
     @Published private(set) var streak: Int
     @Published private(set) var errorMessage: String?
+    @Published var friendCount = 0
+    @Published var showAddFriend = false
 
     // MARK: - Navigation state (the view binds to these)
     @Published var showEditProfile = false
@@ -97,3 +99,18 @@ final class ProfileViewModel: ObservableObject {
         SpeakingProgressViewModel(sessionScores: sessionScores)
     }
 }
+
+    // MARK: - Friends
+    var friendsText: String { "\(friendCount)" }
+
+    func addFriendTapped() { showAddFriend = true }
+
+    func loadFriendCount() async {
+        // Skip in Xcode previews, where Firebase isn't configured.
+        guard ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] != "1" else { return }
+        do {
+            friendCount = try await FriendshipService().fetchFriends().count
+        } catch {
+            print("Couldn't load friend count: \(error)")
+        }
+    }
