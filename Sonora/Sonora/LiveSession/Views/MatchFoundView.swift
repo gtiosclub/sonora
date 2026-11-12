@@ -35,114 +35,153 @@ struct MatchFoundView: View {
     }
     var body: some View {
         AppLayout {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("It's a Match!")
-                    .font(.title2)
-                    .bold()
-                
-                Text("Session invitation")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                
-                OutlinedCard {
-                    VStack(spacing: 14) {
-                        Image(systemName: "person.crop.square")
-                            .font(.system(size: 55))
-                        
-                        Text(
-                            session.opponentType == .ai
-                            ? "AI Practice Partner"
-                            : opponent?.username ?? (
-                                isLoadingOpponent ? "Loading opponent..." : "Opponent unavailable"
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    Text("It's a Match!")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(
+                            Color(
+                                red: 36.0 / 255,
+                                green: 36.0 / 255,
+                                blue: 36.0 / 255
                             )
                         )
-                        .font(.headline)
-                        if session.opponentType == .human {
-                            Button {
-                                showOpponentProfile = true
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Text("View Opponent Profile")
-                                    Image(systemName: "arrow.up.right")
+                    
+                    OutlinedCard {
+                        VStack(spacing: 14) {
+                            Image(systemName: "person.crop.square")
+                                .font(.system(size: 55))
+                            
+                            Text(
+                                session.opponentType == .ai
+                                ? "AI Practice Partner"
+                                : opponent?.username ?? (
+                                    isLoadingOpponent ? "Loading opponent..." : "Opponent unavailable"
+                                )
+                            )
+                            .font(.headline)
+                            if session.opponentType == .human {
+                                Button {
+                                    showOpponentProfile = true
+                                } label: {
+                                    HStack(spacing: 6) {
+                                        Text("View Opponent Profile")
+                                        Image(systemName: "arrow.up.right")
+                                    }
+                                    .font(.subheadline)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.black)
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 14)
+                                    .background(Color.gray.opacity(0.12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.black)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 14)
-                                .background(Color.gray.opacity(0.12))
-                                .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
-                        }
-                        
-                        OutlinedCard {
-                            HStack {
-                                Image(systemName: "checkmark.circle")
-                                
+                            
+                            HStack(spacing: 8) {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .foregroundColor(
+                                        Color(red: 80.0 / 255, green: 78.0 / 255, blue: 118.0 / 255)
+                                    )
+
                                 Text(session.prompt ?? "You're both practicing clear, confident interview answers.")
                                     .font(.caption)
+                                    .foregroundColor(
+                                        Color(red: 36.0 / 255, green: 36.0 / 255, blue: 36.0 / 255)
+                                    )
                             }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(
+                                Color(red: 196.0 / 255, green: 195.0 / 255, blue: 227.0 / 255)
+                                    .opacity(0.35)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            
+                            HStack {
+                                matchTag("Intermediate Speaker")
+                                matchTag("10 mins")
+                            }
+                            
+                            matchTag(session.mode.displayName)
+                            
+                            Text("Both participants need to accept before the session starts.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
-                        
-                        HStack {
-                            matchTag("Intermediate Speaker")
-                            matchTag("10 mins")
-                        }
-                        
-                        matchTag(session.mode.displayName)
-                        
-                        Text("Both participants need to accept before the session starts.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-                
-                Text("SESSION RULES")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                
-                ruleRow("Take turns. Each person gets 4 minutes to practice.")
-                ruleRow("Be specific. Share one useful note after each turn.")
-                ruleRow("Keep it kind. This is a judgment-free practice space.")
-                
-                if hasAccepted {
-                    HStack(spacing: 10) {
-                        ProgressView()
-                        Text("Waiting for the other participant to accept…")
-                            .font(.subheadline)
-                    }
-                }
-                
-                if let actionError {
-                    Text(actionError)
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-                
-                Spacer()
-                
-                Text(hasAccepted ? "You accepted this session." : "Accept to start the session.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                
-                PrimaryButton(
-                    title: isSubmitting ? "Please wait…" : (hasAccepted ? "Accepted" : "Start"),
-                    action: acceptInvitation
-                )
-                .disabled(isSubmitting || hasAccepted)
-                
-                Button(action: declineInvitation) {
-                    Text("Decline")
-                        .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.gray)
+                    }.background(Color.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(
+                                    Color(
+                                        red: 196.0 / 255,
+                                        green: 195.0 / 255,
+                                        blue: 227.0 / 255
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                    
+                    Text("SESSION RULES")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                    
+                    ruleRow("Take turns. Each person gets 4 minutes to practice.")
+                    ruleRow("Be specific. Share one useful note after each turn.")
+                    ruleRow("Keep it kind. This is a judgment-free practice space.")
+                    
+                    if hasAccepted {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Waiting for the other participant to accept…")
+                                .font(.subheadline)
                         }
+                    }
+                    
+                    if let actionError {
+                        Text(actionError)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                    
+                    
+                    Text(hasAccepted ? "You accepted this session." : "Accept to start the session.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
+                    PrimaryButton(
+                        title: isSubmitting ? "Please wait…" : (hasAccepted ? "Accepted" : "Start"),
+                        action: acceptInvitation,
+                        backgroundColor: Color(
+                            red: 80.0 / 255,
+                            green: 78.0 / 255,
+                            blue: 118.0 / 255
+                        )
+                    )
+                    .disabled(isSubmitting || hasAccepted)
+                    
+                    Button(action: declineInvitation) {
+                        Text("Decline")
+                            .font(.system(size: 16))
+                            .foregroundColor(
+                                Color(red: 80.0 / 255, green: 78.0 / 255, blue: 118.0 / 255)
+                            )
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(Color.white)
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(
+                                        Color(red: 80.0 / 255, green: 78.0 / 255, blue: 118.0 / 255),
+                                        lineWidth: 1
+                                    )
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isSubmitting)
                 }
-                .disabled(isSubmitting)
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -215,17 +254,32 @@ struct MatchFoundView: View {
     private func matchTag(_ text: String) -> some View {
         Text(text)
             .font(.caption2)
-            .foregroundColor(.white)
-            .padding(8)
-            .background(Color.black)
-            .cornerRadius(5)
+            .fontWeight(.medium)
+            .foregroundColor(Color(red: 36/255, green: 36/255, blue: 36/255))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                Color(
+                    red: 163/255,
+                    green: 181/255,
+                    blue: 101/255
+                )
+            )
+            .clipShape(Capsule())
     }
     
     // Reusable session-rule row from the original match screen.
     private func ruleRow(_ text: String) -> some View {
         HStack(alignment: .top, spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
-            
+                .foregroundColor(
+                    Color(
+                        red: 163.0 / 255,
+                        green: 181.0 / 255,
+                        blue: 101.0 / 255
+                    )
+                )
+
             Text(text)
                 .font(.subheadline)
         }
