@@ -31,6 +31,7 @@ struct DrillsCommunityTestView: View {
         NavigationLink("Interview Drill Test") { DrillListView(mode: .interview) }
         NavigationLink("Presentation Drill Test") { DrillListView(mode: .speech) }
         NavigationLink("Debate Drill Test") { DrillListView(mode: .debate) }
+        NavigationLink("XP Test") { XPTestView() }
 
 
     }
