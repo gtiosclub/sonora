@@ -242,7 +242,7 @@ struct WaitingView: View {
         do {
             try await cancelWaitingRequest(userId: userId)
             let session = try await createAISession(userId: userId, mode: mode, topic: topic)
-            onSessionUpdate(session)
+            onSessionUpdate(session)   // router pushes .active
         } catch {
             print("Failed to switch to AI practice: \(error)")
             showAIError = true
