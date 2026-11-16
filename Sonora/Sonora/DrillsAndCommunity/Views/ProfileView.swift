@@ -48,6 +48,7 @@ struct ProfileView: View {
                 SpeakingProgressView(viewModel: viewModel.makeProgressViewModel())
             }
             .task { await viewModel.load() }
+            .refreshable { await viewModel.load() }
         }
 
     // MARK: - Sections
@@ -99,9 +100,27 @@ struct ProfileView: View {
                          systemImage: "hammer.fill", tint: .gray,
                          items: viewModel.modes,
                          addLabel: "Add mode") { viewModel.addModeTapped() }
+            
+            Text("Badges")
+                .font(.title3.weight(.bold))
 
+            ForEach([AchievementDefinition.Category.drills, .sessions], id: \.self) { category in
+                Text(category == .drills ? "Drill badges" : "Session badges")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 72))], spacing: 12) {
+                    ForEach(viewModel.allBadges.filter { $0.category == category }) { badge in
+                        BadgeView(emoji: badge.emoji,
+                                  name: badge.name,
+                                  earned: viewModel.isEarned(badge))
+                    }
+                }
+            }
+            
             ProgressPromoCard { viewModel.viewProgressTapped() }
         }
+        
     }
 }
 
