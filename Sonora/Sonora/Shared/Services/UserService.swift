@@ -36,5 +36,6 @@ enum UserService {
 
     static func updateStreak(userID: String, streak: Int) async throws {
         try await users.document(userID).updateData(["streak": streak])
+        try await AchievementService.syncStreakAchievement(userId: userID, streak: streak)
     }
 }
