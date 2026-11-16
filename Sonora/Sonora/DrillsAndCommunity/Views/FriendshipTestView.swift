@@ -17,7 +17,7 @@ struct FriendshipTestView: View {
     private let service = FriendshipService()
 
     @State private var otherUserId = ""
-    @State private var friendships: [Friendship] = []
+    @State private var friendships: [CommunityFriendship] = []
     @State private var message = ""
 
     private var myId: String { Auth.auth().currentUser?.uid ?? "" }
@@ -116,7 +116,7 @@ struct FriendshipTestView: View {
         }
     }
     
-    private func runQuery(_ query: @escaping () async throws -> [Friendship]) {
+    private func runQuery(_ query: @escaping () async throws -> [CommunityFriendship]) {
         Task {
             do {
                 let results = try await query()

@@ -9,6 +9,8 @@ import SwiftUI
 
 @MainActor
 enum InterviewSessions {
+    static let lastFive = [interviewSession5, interviewSession4, interviewSession3, interviewSession2, interviewSession1]
+
     static let interviewSession1: Session = {
         Session(id: "interview1",
                 participants: ["user1"],
@@ -28,7 +30,9 @@ enum InterviewSessions {
                 )!,
                 createdAt: Date(),
                 durationSeconds: 600,
-                sessionSkillScore: SessionSkillScore(id: "interview1", userId: "user1", content: Skill(id: "interview1-content", score: 55, summary: ""), engagement: Skill(id: "interview1-content", score: 58, summary: ""), clarity: Skill(id: "interview1-content", score: 81, summary: ""), confidence: Skill(id: "interview1-content", score: 89, summary: "")))
+                sessionSkillScore: SessionSkillScore(id: "interview1", userId: "user1", content: Skill(id: "interview1-content", score: 55, summary: ""), engagement: Skill(id: "interview1-content", score: 58, summary: ""), clarity: Skill(id: "interview1-content", score: 81, summary: ""), confidence: Skill(id: "interview1-content", score: 89, summary: "")),
+                summary: "Gave a clear, confident overview, but listed past roles without connecting them to the job, and the answer felt flat.",
+                prompt: "Tell me about yourself.")
     }()
     
     static let interviewSession2: Session = {
@@ -50,7 +54,9 @@ enum InterviewSessions {
                 )!,
                 createdAt: Date(),
                 durationSeconds:700,
-                sessionSkillScore: SessionSkillScore(id: "interview2", userId: "user1", content: Skill(id: "interview2-content", score: 90, summary: ""), engagement: Skill(id: "interview2-content", score: 64, summary: ""), clarity: Skill(id: "interview2-content", score: 85, summary: ""), confidence: Skill(id: "interview2-content", score: 55, summary: "")))
+                sessionSkillScore: SessionSkillScore(id: "interview2", userId: "user1", content: Skill(id: "interview2-content", score: 90, summary: ""), engagement: Skill(id: "interview2-content", score: 64, summary: ""), clarity: Skill(id: "interview2-content", score: 85, summary: ""), confidence: Skill(id: "interview2-content", score: 55, summary: "")),
+                summary: "Told a detailed, well-organized story, but hesitated often and undersold their own role in resolving the conflict.",
+                prompt: "Describe a time you handled a conflict on a team.")
     }()
     
     static let interviewSession3: Session = {
@@ -72,7 +78,9 @@ enum InterviewSessions {
                 )!,
                 createdAt: Date(),
                 durationSeconds: 500,
-                sessionSkillScore: SessionSkillScore(id: "interview3", userId: "user1", content: Skill(id: "interview3-content", score: 77, summary: ""), engagement: Skill(id: "interview3-content", score: 66, summary: ""), clarity: Skill(id: "interview3-content", score: 55, summary: ""), confidence: Skill(id: "interview3-content", score: 44, summary: "")))
+                sessionSkillScore: SessionSkillScore(id: "interview3", userId: "user1", content: Skill(id: "interview3-content", score: 77, summary: ""), engagement: Skill(id: "interview3-content", score: 66, summary: ""), clarity: Skill(id: "interview3-content", score: 55, summary: ""), confidence: Skill(id: "interview3-content", score: 44, summary: "")),
+                summary: "Showed real research into the company, but rambled before reaching the point and hedged with phrases like 'I guess'.",
+                prompt: "Why do you want to work here?")
     }()
     
     static let interviewSession4: Session = {
@@ -94,7 +102,9 @@ enum InterviewSessions {
                 )!,
                 createdAt: Date(),
                 durationSeconds: 800,
-                sessionSkillScore: SessionSkillScore(id: "interview4", userId: "user1", content: Skill(id: "interview4-content", score: 21, summary: ""), engagement: Skill(id: "interview4-content", score: 76, summary: ""), clarity: Skill(id: "interview4-content", score: 94, summary: ""), confidence: Skill(id: "interview4-content", score: 99, summary: "")))
+                sessionSkillScore: SessionSkillScore(id: "interview4", userId: "user1", content: Skill(id: "interview4-content", score: 21, summary: ""), engagement: Skill(id: "interview4-content", score: 76, summary: ""), clarity: Skill(id: "interview4-content", score: 94, summary: ""), confidence: Skill(id: "interview4-content", score: 99, summary: "")),
+                summary: "Spoke with strong confidence and clarity, but gave a vague answer with no real weakness or example of improving.",
+                prompt: "What is your greatest weakness?")
     }()
     
     static let interviewSession5: Session = {
@@ -116,6 +126,8 @@ enum InterviewSessions {
                 )!,
                 createdAt: Date(),
                 durationSeconds: 900,
-                sessionSkillScore: SessionSkillScore(id: "interview5", userId: "user1", content: Skill(id: "interview5-content", score: 65, summary: ""), engagement: Skill(id: "interview5-content", score: 70, summary: ""), clarity: Skill(id: "interview5-content", score: 61, summary: ""), confidence: Skill(id: "interview5-content", score: 45, summary: "")))
+                sessionSkillScore: SessionSkillScore(id: "interview5", userId: "user1", content: Skill(id: "interview5-content", score: 65, summary: ""), engagement: Skill(id: "interview5-content", score: 70, summary: ""), clarity: Skill(id: "interview5-content", score: 61, summary: ""), confidence: Skill(id: "interview5-content", score: 45, summary: "")),
+                summary: "Picked a strong project with good detail, but trailed off at the end and never stated the result or their impact.",
+                prompt: "Tell me about a project you're proud of.")
     }()
 }
