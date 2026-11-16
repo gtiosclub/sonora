@@ -141,8 +141,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections.git",
       "state" : {
-        "revision" : "f96b909e1a9e469620bc5037c1e24e00153f376f",
-        "version" : "1.7.5"
+        "revision" : "88754449ab766a739610b660e117762115fabc9c",
+        "version" : "1.7.6"
       }
     },
     {
@@ -168,7 +168,7 @@
       "location" : "https://github.com/livekit/webrtc-xcframework.git",
       "state" : {
         "branch" : "main",
-        "revision" : "7d963f6fae5921cc8e594a5fef42db2bd2ea8563"
+        "revision" : "d972326fbabfa61c527e4774ed41bf83d3b8af09"
       }
     }
   ],

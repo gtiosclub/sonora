@@ -28,6 +28,65 @@ struct UserProfile: Identifiable, Codable, Equatable {
     var masteredTopics: [String]
     var challengingTopics: [String]
     var modes: [String]
+
+    // New in v2 design. Defaulted so older Firestore documents still decode.
+    var pronouns: String
+    var totalDrills: Int
+
+    init(
+        id: String,
+        fullName: String,
+        username: String,
+        email: String,
+        phoneNumber: String,
+        bio: String,
+        totalSessions: Int,
+        totalSpeakingSeconds: Int,
+        masteredTopics: [String],
+        challengingTopics: [String],
+        modes: [String],
+        pronouns: String = "",
+        totalDrills: Int = 0
+    ) {
+        self.id = id
+        self.fullName = fullName
+        self.username = username
+        self.email = email
+        self.phoneNumber = phoneNumber
+        self.bio = bio
+        self.totalSessions = totalSessions
+        self.totalSpeakingSeconds = totalSpeakingSeconds
+        self.masteredTopics = masteredTopics
+        self.challengingTopics = challengingTopics
+        self.modes = modes
+        self.pronouns = pronouns
+        self.totalDrills = totalDrills
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, fullName, username, email, phoneNumber, bio
+        case totalSessions, totalSpeakingSeconds
+        case masteredTopics, challengingTopics, modes
+        case pronouns, totalDrills
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        fullName = try c.decode(String.self, forKey: .fullName)
+        username = try c.decode(String.self, forKey: .username)
+        email = try c.decode(String.self, forKey: .email)
+        phoneNumber = try c.decode(String.self, forKey: .phoneNumber)
+        bio = try c.decode(String.self, forKey: .bio)
+        totalSessions = try c.decode(Int.self, forKey: .totalSessions)
+        totalSpeakingSeconds = try c.decode(Int.self, forKey: .totalSpeakingSeconds)
+        masteredTopics = try c.decode([String].self, forKey: .masteredTopics)
+        challengingTopics = try c.decode([String].self, forKey: .challengingTopics)
+        modes = try c.decode([String].self, forKey: .modes)
+        // New fields: missing in older documents
+        pronouns = try c.decodeIfPresent(String.self, forKey: .pronouns) ?? ""
+        totalDrills = try c.decodeIfPresent(Int.self, forKey: .totalDrills) ?? 0
+    }
 }
 
 extension UserProfile {

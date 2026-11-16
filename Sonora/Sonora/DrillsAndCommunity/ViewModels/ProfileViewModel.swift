@@ -69,6 +69,11 @@ final class ProfileViewModel: ObservableObject {
     var challengingTopics: [String] { profile.challengingTopics }
     var modes: [String] { profile.modes }
 
+    // New in v2 design (requires UserProfile.pronouns and UserProfile.totalDrills)
+    var pronouns: String { profile.pronouns }
+    var bio: String { profile.bio }
+    var drillsText: String { "\(profile.totalDrills)" }
+
     // MARK: - Loading
     func load() async {
         do {
@@ -100,6 +105,7 @@ final class ProfileViewModel: ObservableObject {
     }
 }
 
+extension ProfileViewModel {
     // MARK: - Friends
     var friendsText: String { "\(friendCount)" }
 
@@ -114,3 +120,4 @@ final class ProfileViewModel: ObservableObject {
             print("Couldn't load friend count: \(error)")
         }
     }
+}

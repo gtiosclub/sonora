@@ -41,7 +41,10 @@ struct ContentView: View {
                     Text("Go to Drills & Community Test View")
                 }
                 
-                NavigationLink(destination: ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))) {
+                NavigationLink(destination: ProfileView(
+                    viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5),
+                    friendshipService: MockFriendshipService()
+                )) {
                     Text("Go to Profile View")
                 }
                 NavigationLink(destination: FriendshipTestView()) {
@@ -61,7 +64,6 @@ struct ContentView: View {
         .fullScreenCover(isPresented: $showPairing) {
             PairingSetupView()
         }
-        .padding()
     }
 
     /// Offline fallback transcript for the Analysis demo flow.

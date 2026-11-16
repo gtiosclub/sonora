@@ -18,6 +18,7 @@ final class EditProfileViewModel: ObservableObject {
     @Published var email: String
     @Published var phoneNumber: String
     @Published var bio: String
+    @Published var pronouns: String
 
     // MARK: - State
     @Published private(set) var isSaving = false
@@ -43,6 +44,7 @@ final class EditProfileViewModel: ObservableObject {
         self.email = profile.email
         self.phoneNumber = profile.phoneNumber
         self.bio = profile.bio
+        self.pronouns = profile.pronouns
     }
 
     // MARK: - Display
@@ -54,6 +56,7 @@ final class EditProfileViewModel: ObservableObject {
             || email != original.email
             || phoneNumber != original.phoneNumber
             || bio != original.bio
+            || pronouns != original.pronouns
     }
 
     var isValid: Bool {
@@ -75,6 +78,7 @@ final class EditProfileViewModel: ObservableObject {
         updated.email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         updated.phoneNumber = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
         updated.bio = bio.trimmingCharacters(in: .whitespacesAndNewlines)
+        updated.pronouns = pronouns
 
         do {
             try await repository.saveProfile(updated)
