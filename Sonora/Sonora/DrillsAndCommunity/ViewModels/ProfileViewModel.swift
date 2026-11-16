@@ -18,6 +18,7 @@ final class ProfileViewModel: ObservableObject {
     @Published private(set) var profile: UserProfile
     @Published private(set) var streak: Int
     @Published private(set) var errorMessage: String?
+    @Published private(set) var earnedIDs: Set<String> = []
 
     // MARK: - Navigation state (the view binds to these)
     @Published var showEditProfile = false
@@ -52,6 +53,9 @@ final class ProfileViewModel: ObservableObject {
     var displayName: String { profile.fullName.isEmpty ? profile.username : profile.fullName }
     var handle: String { "@\(profile.username)" }
     var initials: String { profile.initials }
+    
+    var allBadges: [AchievementDefinition] { AchievementCatalog.all }
+    func isEarned(_ badge: AchievementDefinition) -> Bool { earnedIDs.contains(badge.id) }
 
     var sessionsText: String { "\(profile.totalSessions)" }
 
@@ -75,6 +79,9 @@ final class ProfileViewModel: ObservableObject {
         } catch {
             errorMessage = "Couldn't load your profile."
         }
+
+        let earned = (try? await AchievementService.fetchEarned(userId: profile.id)) ?? []
+        earnedIDs = Set(earned.map(\.achievementId))
     }
 
     // MARK: - Actions

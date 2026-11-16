@@ -338,3 +338,26 @@ struct SkillProgressRow: View {
         .padding(.vertical, 12)
     }
 }
+
+// MARK: - Badge View
+struct BadgeView: View {
+    let emoji: String
+    let name: String
+    let earned: Bool
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(emoji)
+                .font(.system(size: 30))
+                .frame(width: 56, height: 56)
+                .background(Circle().fill(Color(.secondarySystemBackground)))
+                .saturation(earned ? 1 : 0)
+                .opacity(earned ? 1 : 0.35)
+            Text(name)
+                .font(.caption2)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .frame(width: 72)
+    }
+}
