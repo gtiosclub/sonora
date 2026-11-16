@@ -15,13 +15,10 @@ struct FeedbackTarget: Identifiable {
 struct TestView: View {
     @Environment(AuthManager.self) private var auth
     @State private var output = "Tap a button to test"   // shows the result on screen
-<<<<<<< Updated upstream
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
     @State private var randomMatchOutput = "Tap random match button to test"
     @State private var createdSessionId = ""
-=======
     @State private var feedbackTarget: FeedbackTarget?   // set when a live session ends
->>>>>>> Stashed changes
 
     var body: some View {
         VStack {
@@ -72,7 +69,6 @@ struct TestView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-<<<<<<< Updated upstream
             Button ("Test Request Random Match") {
                 Task {
                     let userID = auth.currentUser?.id ?? ""
@@ -98,8 +94,6 @@ struct TestView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             
-=======
->>>>>>> Stashed changes
             Button("Test Join Wait Queue") {
                 Task {
                     do {
@@ -109,7 +103,6 @@ struct TestView: View {
                     }
                 }
             }
-<<<<<<< Updated upstream
             Button("Test Join Debate Queue") {
                 Task {
                     do {
@@ -142,9 +135,6 @@ struct TestView: View {
                     }
                 }
             }
-=======
-
->>>>>>> Stashed changes
             Button("Test Remove From Queue") {
                 Task {
                     do {
@@ -164,7 +154,6 @@ struct TestView: View {
                     }
                 }
             }
-<<<<<<< Updated upstream
             Button ("Create Pending Session") {
                 Task {
                         do {
@@ -174,34 +163,17 @@ struct TestView: View {
                         }
                     }
             }
-=======
-
-            Button("Create Pending Session") {
-                Task {
-                    do {
-                        try await createPendingSession(userID1: "abcd", userID2: "abc", mode: .interview)
-                    } catch {
-                        print("Failed with error: \(error.localizedDescription)")
-                    }
-                }
-            }
-
->>>>>>> Stashed changes
             Button("Test Create AI Session") {
                 Task {
                     do {
                         let session = try await createAISession(userId: auth.currentUser?.id ?? "", mode: .interview)
-<<<<<<< Updated upstream
                         createdSessionId = session.id
-=======
->>>>>>> Stashed changes
                         output = "Created: \(session.id)"
                     } catch {
                         output = "ERROR: \(error.localizedDescription)"
                     }
                 }
             }
-<<<<<<< Updated upstream
             Text(output)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -231,7 +203,12 @@ struct TestView: View {
                             output = String(format: "Similarity: %.2f (%.0f%% similar)", similarity, similarity * 100)
                         } else {
                             output = "Cannot determine similarity"
-=======
+                        }
+                    } catch {
+                        output = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
 
             // Ends a live session and, if it was against a human, opens the feedback sheet
             Button("Test End Session + Feedback") {
@@ -243,25 +220,17 @@ struct TestView: View {
                             userID2: "testOpponent",
                             mode: .interview
                         )
-                        let ended = try await endSession(sessionID: session.id)
-                        if let opponentId = liveOpponentId(in: ended, currentUserId: userId) {
+                        try await completeSession(sessionID: session.id)
+                        if let opponentId = liveOpponentId(in: session, currentUserId: userId) {
                             feedbackTarget = FeedbackTarget(sessionId: session.id, opponentId: opponentId)
                         } else {
                             output = "Not a live session, no feedback asked"
->>>>>>> Stashed changes
                         }
                     } catch {
                         output = "ERROR: \(error.localizedDescription)"
                     }
                 }
             }
-<<<<<<< Updated upstream
-=======
-
-            Text(output)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
->>>>>>> Stashed changes
         }
         .padding()
         .sheet(item: $feedbackTarget) { target in

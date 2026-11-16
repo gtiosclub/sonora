@@ -1,7 +1,10 @@
 //
 //  OpponentFeedbackService.swift
 //  Sonora
-
+//
+//  Asks for and stores human feedback about an opponent after a live session.
+//  Matches the style of SessionViewModel.swift (free async functions, "Sessions" collection).
+//
 
 import FirebaseFirestore
 
@@ -18,22 +21,6 @@ func liveOpponentId(in session: Session, currentUserId: String) -> String? {
         return nil
     }
     return session.participants.first(where: { $0 != currentUserId })
-}
-
-// Marks a session as completed and returns the updated session.
-// Requires a `completed` case in Session.Status.
-func endSession(sessionID: String) async throws -> Session {
-    let sessionRef = Firestore.firestore().collection("Sessions").document(sessionID)
-
-    // Set the session status to completed
-    try await sessionRef.updateData([
-        "status": "completed",
-        "endTime": FieldValue.serverTimestamp()
-    ])
-
-    // Get the updated session back
-    let updatedDocument = try await sessionRef.getDocument()
-    return try updatedDocument.data(as: Session.self)
 }
 
 // Saves one user's feedback about their opponent to
