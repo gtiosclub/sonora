@@ -85,21 +85,16 @@ enum XPService {
         )
     }
 
-    // MARK: Firebase (stored as an "xp" field on Users/{uid})
-
-    private static var users: CollectionReference {
-        Firestore.firestore().collection("Users")
-    }
+    // MARK: Firebase (stored as lifetimeXP on UserProgress/{uid})
 
     /// Adds XP to the user's running total
     static func awardXP(_ amount: Int, to userId: String) async throws {
         guard amount > 0 else { return }
-        try await users.document(userId).updateData(["xp": FieldValue.increment(Int64(amount))])
+        try await UserProgressService.record(userId: userId, xp: amount)
     }
 
     /// The user's total XP (0 if they haven't earned any yet)
     static func fetchXP(for userId: String) async throws -> Int {
-        let snapshot = try await users.document(userId).getDocument()
-        return snapshot.get("xp") as? Int ?? 0
+        try await UserProgressService.fetch(for: userId).lifetimeXP
     }
 }
