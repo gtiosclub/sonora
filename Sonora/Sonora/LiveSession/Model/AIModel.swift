@@ -36,6 +36,6 @@ final class AIOpponentViewModel {
 
    
     func stop() {
-        conversation.disconnect()
+        conversation.muted = true
     }
 }
