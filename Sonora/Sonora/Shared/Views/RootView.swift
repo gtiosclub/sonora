@@ -11,10 +11,11 @@ struct RootView: View {
     @Environment(AuthManager.self) private var auth
 
     var body: some View {
-        if auth.isLoading {
+        if auth.isSignedIn {
+            MainTabView()
+
+        } else if auth.isLoading {
             ProgressView()
-        } else if auth.isSignedIn {
-            ContentView()
                 .preferredColorScheme(.light)
         } else {
             LoginView()
