@@ -37,23 +37,36 @@ struct WaitingView: View {
     }
 
     var body: some View {
-        AppLayout {
+        AppLayout(
+            backgroundColor: Color(
+                red: 253.0 / 255,
+                green: 248.0 / 255,
+                blue: 226.0 / 255
+            )
+        ) {
             VStack(spacing: 20) {
                 Text("Searching...")
-                    .font(.title2)
-                    .bold()
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundColor(
+                        Color(red: 36.0 / 255, green: 36.0 / 255, blue: 36.0 / 255)
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 35)
 
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.15))
-                    ProgressView()
-                        .scaleEffect(1.5)
-                }
-                .frame(height: 230)
+                Image("Waiting")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 280)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 30)
 
                 Text("Estimated wait time: 2 mins")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                    .font(.system(size: 16))
+                    .foregroundColor(
+                        Color(red: 36.0 / 255, green: 36.0 / 255, blue: 36.0 / 255)
+                    )
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 5)
 
                 if let listenerError {
                     Text(listenerError)
@@ -61,13 +74,27 @@ struct WaitingView: View {
                         .foregroundStyle(.red)
                 }
 
-                OutlinedCard {
-                    HStack(spacing: 12) {
-                        Image(systemName: "square.and.pencil")
-                        Text("Tip: Speak slightly slower than you think you need to!")
-                            .font(.caption)
-                    }
+                HStack(alignment: .center, spacing: 20) {
+                    Image(systemName: "lightbulb")
+                        .font(.system(size: 36))
+                        .foregroundColor(
+                            Color(red: 36.0 / 255, green: 36.0 / 255, blue: 36.0 / 255)
+                        )
+
+                    Text("Tip: Speak slightly slower than you think you need to!")
+                        .font(.system(size: 20))
+                        .foregroundColor(
+                            Color(red: 36.0 / 255, green: 36.0 / 255, blue: 36.0 / 255)
+                        )
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 26)
+                .frame(maxWidth: .infinity)
+                .background(
+                    Color(red: 196.0 / 255, green: 195.0 / 255, blue: 227.0 / 255)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 28))
 
                 Spacer()
 
@@ -84,14 +111,16 @@ struct WaitingView: View {
                     dismiss()
                 } label: {
                     Text("Cancel")
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.gray)
-                        )
-                }
+                        .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 18)
+                                .background(
+                                    Color(red: 241.0 / 255, green: 100.0 / 255, blue: 46.0 / 255)
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 22))
+                        }
+                        .buttonStyle(.plain)
             }
         }
         .navigationBarBackButtonHidden(true)

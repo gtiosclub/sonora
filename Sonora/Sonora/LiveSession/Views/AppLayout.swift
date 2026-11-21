@@ -11,14 +11,19 @@ import SwiftUI
 
 struct AppLayout<Content: View>: View {
     let content: Content
+    var backgroundColor: Color = .white
 
-    init(@ViewBuilder content: () -> Content) {
+    init(
+        backgroundColor: Color = .white,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.backgroundColor = backgroundColor
         self.content = content()
     }
 
     var body: some View {
         ZStack {
-            Color.white
+            backgroundColor
                 .ignoresSafeArea()
 
             content
