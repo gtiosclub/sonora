@@ -28,10 +28,12 @@ struct AppLayout<Content: View>: View {
     }
 }
 
-// Reusable black button
+// Reusable primary button
 struct PrimaryButton: View {
     let title: String
     let action: () -> Void
+
+    var backgroundColor: Color = .black
 
     var body: some View {
         Button(action: action) {
@@ -40,7 +42,7 @@ struct PrimaryButton: View {
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
-                .background(Color.black)
+                .background(backgroundColor)
                 .cornerRadius(6)
         }
     }
