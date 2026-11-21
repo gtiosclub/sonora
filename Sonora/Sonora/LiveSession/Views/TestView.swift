@@ -1,4 +1,3 @@
-
 //
 //  TestView.swift
 //  Sonora
@@ -7,12 +6,19 @@
 //
 import SwiftUI
 
+struct FeedbackTarget: Identifiable {
+    let id = UUID()
+    let sessionId: String
+    let opponentId: String
+}
+
 struct TestView: View {
     @Environment(AuthManager.self) private var auth
     @State private var output = "Tap a button to test"   // shows the result on screen
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
     @State private var randomMatchOutput = "Tap random match button to test"
     @State private var createdSessionId = ""
+    @State private var feedbackTarget: FeedbackTarget?   // set when a live session ends
 
     var body: some View {
         VStack {
@@ -46,7 +52,6 @@ struct TestView: View {
                     }
                 }
             }
-
 
             // Ticket 1: looks for a waiting user in .interview mode
             Button("Test Find Waiting Match") {
@@ -91,12 +96,12 @@ struct TestView: View {
             
             Button("Test Join Wait Queue") {
                 Task {
-                        do {
-                            try await joinQueue(userId: auth.currentUser?.id ?? "", mode: Session.Mode.interview)
-                        } catch {
-                            print("Failed with error: \(error.localizedDescription)")
-                        }
+                    do {
+                        try await joinQueue(userId: auth.currentUser?.id ?? "", mode: Session.Mode.interview)
+                    } catch {
+                        print("Failed with error: \(error.localizedDescription)")
                     }
+                }
             }
             Button("Test Join Debate Queue") {
                 Task {
@@ -139,15 +144,15 @@ struct TestView: View {
                     }
                 }
             }
+
             Button("Test Decline Sesion") {
                 Task {
-                        do {
-                            try await declineSession(userId: auth.currentUser?.id ?? "", sessionID: "nfVcbgKJpHJSLFi70YjH")
-                        } catch {
-                            print("Failed with error: \(error.localizedDescription)")
-                        }
+                    do {
+                        try await declineSession(userId: auth.currentUser?.id ?? "", sessionID: "nfVcbgKJpHJSLFi70YjH")
+                    } catch {
+                        print("Failed with error: \(error.localizedDescription)")
                     }
-            
+                }
             }
             Button ("Create Pending Session") {
                 Task {
@@ -204,7 +209,40 @@ struct TestView: View {
                     }
                 }
             }
+
+            // Ends a live session and, if it was against a human, opens the feedback sheet
+            Button("Test End Session + Feedback") {
+                Task {
+                    do {
+                        let userId = auth.currentUser?.id ?? ""
+                        let session = try await createPendingSession(
+                            userID1: userId,
+                            userID2: "testOpponent",
+                            mode: .interview
+                        )
+                        try await completeSession(sessionID: session.id)
+                        if let opponentId = liveOpponentId(in: session, currentUserId: userId) {
+                            feedbackTarget = FeedbackTarget(sessionId: session.id, opponentId: opponentId)
+                        } else {
+                            output = "Not a live session, no feedback asked"
+                        }
+                    } catch {
+                        output = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
         }
         .padding()
+        .sheet(item: $feedbackTarget) { target in
+            OpponentFeedbackSheet(
+                sessionId: target.sessionId,
+                raterId: auth.currentUser?.id ?? "",
+                opponentName: "your opponent",
+                onFinish: {
+                    feedbackTarget = nil
+                    output = "Feedback flow finished"
+                }
+            )
+        }
     }
 }
