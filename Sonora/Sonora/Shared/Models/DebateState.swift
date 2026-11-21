@@ -9,7 +9,7 @@ import Foundation
 
 struct DebateState{
     
-    enum Phase {
+    enum Phase: CaseIterable, Equatable {
         case userOpening
         case aiOpening
         case userRebuttal
@@ -55,7 +55,7 @@ struct DebateState{
         }
     }
     
-    enum Status{
+    enum Status: Equatable{
         case notStarted
         case connecting
         case inProgress
@@ -64,11 +64,27 @@ struct DebateState{
         case error(String)
     }
     
-    let topic: String
-    let userSide: String
-    let status: Status
-    let phase: Phase
-    let secondsRemaining: Int
-    let isAISpeaking: Bool
+    var topic: String
+    var userSide: String
+    var status: Status
+    var phase: Phase
+    var secondsRemaining: Int
+    var isAISpeaking: Bool
+    
+    // Allows DebateState to progress and move to the next round
+    mutating func advance() {
+        let all = Phase.allCases
+        guard let currentIndex = all.firstIndex(of: phase) else {
+            return
+        }
+        let nextIndex = currentIndex + 1;
+        
+        if all.indices.contains(nextIndex) {
+            phase = all[nextIndex]
+            secondsRemaining = phase.durationSeconds
+        } else {
+            status = .judging
+        }
+    }
 }
 
