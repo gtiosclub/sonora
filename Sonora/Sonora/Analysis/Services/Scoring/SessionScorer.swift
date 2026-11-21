@@ -85,6 +85,18 @@ struct SessionScorer {
                     message: "Rushed here (~\(Int(windowWPM)) wpm)")
         }
 
+        findings += rushedWindows.map { index, windowWPM in
+            Finding(start: Double(index) * 30, duration: 30,
+                    message: "Rushed here (~\(Int(windowWPM)) wpm)")
+        }
+
+        let pauses = PauseAnalyzer().findPauses(in: words)
+        metrics.append(Metric(name: "Long pauses", value: Double(pauses.count)))
+        findings += pauses.map {
+            Finding(start: $0.start, duration: $0.duration,
+                    message: "Paused for \(String(format: "%.1f", $0.duration)) s")
+        }
+
         let clarity = Self.average([fillerBand, paceBand, mumbleBand, rushedBand].map(\.score))
 
         // MARK: Confidence
