@@ -8,13 +8,17 @@
 import Foundation
 
 enum Secrets {
-    /// Reads the key from Secrets.plist, which is gitignored. Returns "" if missing.
-    static var deepgramAPIKey: String {
+    static var deepgramAPIKey: String { value(for: "DEEPGRAM_API_KEY") }
+
+    static var openAIAPIKey: String { value(for: "OPENAI_API_KEY") }
+
+    /// Reads a key from Secrets.plist, which is gitignored. Returns "" if missing.
+    private static func value(for key: String) -> String {
         guard let url = Bundle.main.url(forResource: "Secrets", withExtension: "plist"),
               let data = try? Data(contentsOf: url),
               let dict = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let key = dict["DEEPGRAM_API_KEY"] as? String
+              let value = dict[key] as? String
         else { return "" }
-        return key
+        return value
     }
 }

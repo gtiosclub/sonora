@@ -5,6 +5,7 @@ import FirebaseFirestore
 // Screen 2: Waiting
 struct WaitingView: View {
     let mode: Session.Mode
+    let topic: DebateTopic?
     let matchingStartedAt: Date
     let onSessionUpdate: (Session) -> Void
 
@@ -25,10 +26,12 @@ struct WaitingView: View {
 
     init(
         mode: Session.Mode,
+        topic: DebateTopic? = nil,
         matchingStartedAt: Date = Date(),
         onSessionUpdate: @escaping (Session) -> Void = { _ in }
     ) {
         self.mode = mode
+        self.topic = topic
         self.matchingStartedAt = matchingStartedAt
         self.onSessionUpdate = onSessionUpdate
     }
@@ -155,7 +158,7 @@ struct WaitingView: View {
 
         do {
             try await cancelWaitingRequest(userId: userId)
-            let session = try await createAISession(userId: userId, mode: mode)
+            let session = try await createAISession(userId: userId, mode: mode, topic: topic)
             onSessionUpdate(session)   // router pushes .active
         } catch {
             print("Failed to switch to AI practice: \(error)")

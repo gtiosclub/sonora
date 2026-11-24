@@ -10,6 +10,7 @@
 		08EBC723305727FE00DED16D /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 08EBC722305727FE00DED16D /* FirebaseCore */; };
 		08EBC7253057280200DED16D /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 08EBC7243057280200DED16D /* FirebaseAuth */; };
 		08EBC7273057280700DED16D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 08EBC7263057280700DED16D /* FirebaseFirestore */; };
+		A1B2C3D4E5F6071829304A03 /* RealtimeAPI in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F6071829304A02 /* RealtimeAPI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 				08EBC723305727FE00DED16D /* FirebaseCore in Frameworks */,
 				08EBC7253057280200DED16D /* FirebaseAuth in Frameworks */,
 				08EBC7273057280700DED16D /* FirebaseFirestore in Frameworks */,
+				A1B2C3D4E5F6071829304A03 /* RealtimeAPI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -85,6 +87,7 @@
 				08EBC722305727FE00DED16D /* FirebaseCore */,
 				08EBC7243057280200DED16D /* FirebaseAuth */,
 				08EBC7263057280700DED16D /* FirebaseFirestore */,
+				A1B2C3D4E5F6071829304A02 /* RealtimeAPI */,
 			);
 			productName = Sonora;
 			productReference = CED3477230571E5C0016E355 /* Sonora.app */;
@@ -116,6 +119,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				08EBC720305726FF00DED16D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				A1B2C3D4E5F6071829304A01 /* XCRemoteSwiftPackageReference "swift-realtime-openai" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CED3477330571E5C0016E355 /* Products */;
@@ -361,6 +365,14 @@
 				minimumVersion = 12.19.1;
 			};
 		};
+		A1B2C3D4E5F6071829304A01 /* XCRemoteSwiftPackageReference "swift-realtime-openai" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/m1guelpf/swift-realtime-openai";
+			requirement = {
+				kind = revision;
+				revision = 46f393d9e2e60724aadc30062f75ee73bbcdb8fc;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -378,6 +390,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 08EBC720305726FF00DED16D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		A1B2C3D4E5F6071829304A02 /* RealtimeAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A1B2C3D4E5F6071829304A01 /* XCRemoteSwiftPackageReference "swift-realtime-openai" */;
+			productName = RealtimeAPI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
