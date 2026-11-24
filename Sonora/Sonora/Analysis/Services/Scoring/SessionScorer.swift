@@ -85,6 +85,13 @@ struct SessionScorer {
                     message: "Rushed here (~\(Int(windowWPM)) wpm)")
         }
 
+        let pauses = PauseAnalyzer().findPauses(in: words)
+        metrics.append(Metric(name: "Long pauses", value: Double(pauses.count)))
+        findings += pauses.map {
+            Finding(start: $0.start, duration: $0.duration,
+                    message: "Paused for \(String(format: "%.1f", $0.duration)) s")
+        }
+
         let clarity = Self.average([fillerBand, paceBand, mumbleBand, rushedBand].map(\.score))
 
         // MARK: Confidence
@@ -107,6 +114,23 @@ struct SessionScorer {
                                         message: "Low eye contact overall (\(Int(eyeContact))%)"))
             }
         }
+        
+        if let video, !video.postures.isEmpty {
+            let swayPercent = Self.standardDeviation(video.postures.map { Double($0.posture.shoulderMidX) }) * 100
+            let averageTilt = Self.average(video.postures.map { abs(Double($0.posture.shoulderTilt)) })
+
+            let postureBand: Band
+            if swayPercent < 2 && averageTilt < 5 {
+                postureBand = .good
+            } else if swayPercent > 5 || averageTilt > 10 {
+                postureBand = .needsWork
+            } else {
+                postureBand = .ok
+            }
+            confidenceBands.append(postureBand)
+            metrics.append(Metric(name: "Posture stability", value: swayPercent))
+            print("postures: \(video.postures.count), sway: \(swayPercent), tilt: \(averageTilt), band: \(postureBand)")
+        }
 
         let hedges = Self.hedgeCount(words)
         let hedgeRate = minutes > 0 ? Double(hedges) / minutes : 0
@@ -115,6 +139,7 @@ struct SessionScorer {
         metrics.append(Metric(name: "Hedging (per min)", value: hedgeRate))
 
         let confidence = Self.average(confidenceBands.map(\.score))
+        print("confidence: \(confidence)")
 
         // MARK: Engaging
 
