@@ -9,7 +9,7 @@ struct SessionScoreHistoryStore {
             .getDocuments()
 
         return snapshot.documents
-            .compactMap { try? $0.data(as: Session.self) }
+            .compactMap { try? decodeSession($0) }
             .sorted { $0.createdAt < $1.createdAt }
             .compactMap { $0.sessionSkillScore }
     }
