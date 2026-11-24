@@ -85,11 +85,6 @@ struct SessionScorer {
                     message: "Rushed here (~\(Int(windowWPM)) wpm)")
         }
 
-        findings += rushedWindows.map { index, windowWPM in
-            Finding(start: Double(index) * 30, duration: 30,
-                    message: "Rushed here (~\(Int(windowWPM)) wpm)")
-        }
-
         let pauses = PauseAnalyzer().findPauses(in: words)
         metrics.append(Metric(name: "Long pauses", value: Double(pauses.count)))
         findings += pauses.map {
