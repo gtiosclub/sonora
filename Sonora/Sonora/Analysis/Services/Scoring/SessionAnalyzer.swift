@@ -24,7 +24,27 @@ struct SessionAnalyzer {
 
         let transcript = try await speechTask.transcript
         let video = try? await visualsTask
-        return score(transcript: transcript, video: video, speechType: speechType)
+        let base = score(transcript: transcript, video: video, speechType: speechType)
+
+        // Content is the one category the deterministic scorer can't compute; fill it
+        // from the on-device model. Stays nil (and out of the overall) when unavailable.
+        guard let content = await ContentScorer().score(transcript: transcript, speechType: speechType)
+        else { return base }
+
+        let scores = SessionScores(
+            engagement: base.report.scores.engagement,
+            confidence: base.report.scores.confidence,
+            clarity: base.report.scores.clarity,
+            content: content
+        )
+        let report = AnalysisReport(
+            scores: scores,
+            summary: base.report.summary,
+            metrics: base.report.metrics,
+            findings: base.report.findings
+        )
+        let overall = SessionScorer.overall(for: scores, speechType: speechType)
+        return Result(transcript: base.transcript, report: report, overall: overall)
     }
 
     /// Scores an already-decoded transcript (e.g. the offline fixture path).

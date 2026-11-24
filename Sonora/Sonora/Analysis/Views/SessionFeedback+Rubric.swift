@@ -32,7 +32,8 @@ extension SessionFeedback {
             categoryBar("Speaking clarity", scores.clarity),
             categoryBar("Confidence", scores.confidence),
             categoryBar("Engaging", scores.engagement),
-            pendingBar("Content")   // LLM not wired yet
+            // Content comes from the on-device LLM; unavailable on some devices.
+            scores.content.map { categoryBar("Content", $0) } ?? pendingBar("Content")
         ]
 
         let duration = max(result.transcript.words.last?.end ?? 0, 1)
