@@ -204,6 +204,37 @@ struct TestView: View {
                     }
                 }
             }
+            
+            Button("Test Debate Advance") {
+                Task {
+                    // Start at the first phase; must be `var` because advance() is mutating
+                    var state = DebateState(
+                        topic: "Test",
+                        userSide: "Pro",
+                        status: .inProgress,
+                        phase: .userOpening,
+                        secondsRemaining: DebateState.Phase.userOpening.durationSeconds,
+                        isAISpeaking: false
+                    )
+
+                    // Advance 5 times, printing each step to the Xcode console
+                    for step in 1...5 {
+                        state.advance()
+                        print("advance #\(step): phase=\(state.phase), secs=\(state.secondsRemaining), status=\(state.status)")
+                    }
+                    let fiveOK = state.phase == .aiClosing && state.secondsRemaining == 60
+
+                    // 6th advance should move the debate to judging
+                    state.advance()
+                    print("advance #6: phase=\(state.phase), secs=\(state.secondsRemaining), status=\(state.status)")
+                    let sixOK = state.status == .judging
+
+                    output = (fiveOK && sixOK)
+                        ? "advance() passed"
+                        : "advance() failed: phase=\(state.phase), secs=\(state.secondsRemaining), status=\(state.status)"
+                }
+            }
+            
         }
         .padding()
     }
