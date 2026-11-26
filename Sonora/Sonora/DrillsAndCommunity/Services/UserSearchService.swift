@@ -14,12 +14,13 @@ struct FoundUser: Identifiable, Equatable {
     let displayName: String
 }
 
-/// Finds another user by username or phone number.
+/// Finds users by username, phone number, or ID.
 final class UserSearchService {
 
     // ⚠️ Check these against Firestore Database -> Data in the Firebase Console.
     // You have both "Users" and "users" collections, so look at which one holds
     // real accounts with a username and phone number, and match it exactly.
+    // FirestoreProfileRepository uses the same collection name; keep them in sync.
     private static let collectionName = "users"
     private static let usernameField  = "username"
     private static let phoneField     = "phoneNumber"
@@ -29,13 +30,23 @@ final class UserSearchService {
     private lazy var db = Firestore.firestore()
 
     func findUser(username: String) async throws -> FoundUser? {
+        // Onboarding stores usernames lowercase, so search lowercase too.
         let cleaned = username.hasPrefix("@") ? String(username.dropFirst()) : username
-        return try await findUser(field: Self.usernameField, value: cleaned)
+        return try await findUser(field: Self.usernameField, value: cleaned.lowercased())
     }
 
-    /// Exact match on the phone number as it's stored in Firestore.
+    /// Matches the phone number as onboarding stores it (digits and a leading "+").
     func findUser(phone: String) async throws -> FoundUser? {
-        try await findUser(field: Self.phoneField, value: phone)
+        let normalized = PhoneNumberFormatter.normalize(phone)
+        guard !normalized.isEmpty else { return nil }
+        return try await findUser(field: Self.phoneField, value: normalized)
+    }
+
+    /// Look up a user by their UID (used for friends lists).
+    func findUser(id: String) async throws -> FoundUser? {
+        let doc = try await db.collection(Self.collectionName).document(id).getDocument()
+        guard let data = doc.data() else { return nil }
+        return makeUser(id: doc.documentID, data: data)
     }
 
     private func findUser(field: String, value: String) async throws -> FoundUser? {
@@ -45,9 +56,12 @@ final class UserSearchService {
             .getDocuments()
 
         guard let doc = snapshot.documents.first else { return nil }
-        let data = doc.data()
+        return makeUser(id: doc.documentID, data: doc.data())
+    }
+
+    private func makeUser(id: String, data: [String: Any]) -> FoundUser {
         let username = data[Self.usernameField] as? String ?? ""
         let name = Self.nameFields.compactMap { data[$0] as? String }.first ?? username
-        return FoundUser(id: doc.documentID, username: username, displayName: name)
+        return FoundUser(id: id, username: username, displayName: name)
     }
 }
