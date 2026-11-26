@@ -150,9 +150,13 @@ struct SessionScorer {
         let mattrBand: Band = mattr > 0.72 ? .good : (mattr >= 0.65 ? .ok : .needsWork)
         metrics.append(Metric(name: "Vocabulary (MATTR)", value: mattr))
 
-        let repeats = Self.repeatedTrigrams(words)
+        let repeatedPhrases = Self.repeatedTrigramPhrases(words)
+        let repeats = repeatedPhrases.count
         let repeatBand: Band = repeats == 0 ? .good : (repeats <= 2 ? .ok : .needsWork)
         metrics.append(Metric(name: "Repeated phrases", value: Double(repeats)))
+        findings += repeatedPhrases.map {
+            Finding(start: $0.start, duration: 0, message: "Repeated phrase: \"\($0.phrase)\" (×\($0.count))")
+        }
 
         let engaging = Self.average([varietyBand, mattrBand, repeatBand].map(\.score))
 
@@ -307,16 +311,29 @@ struct SessionScorer {
     }
 
     /// Number of 3-word phrases said 3 or more times.
-    private static func repeatedTrigrams(_ words: [TranscriptWord]) -> Int {
-        let tokens = words.map { FillerWordAnalyzer.normalize($0.text) }.filter { !$0.isEmpty }
-        guard tokens.count >= 3 else { return 0 }
-        var counts: [String: Int] = [:]
-        for i in 0...(tokens.count - 3) {
-            counts[tokens[i..<i + 3].joined(separator: " "), default: 0] += 1
+    private static func repeatedTrigramPhrases(
+        _ words: [TranscriptWord]
+    ) -> [(phrase: String, count: Int, start: Double)] {
+        // Keep each word's start time next to its normalized text, skipping empty ones
+        let tokens = words.compactMap { word -> (text: String, start: Double)? in
+            let text = FillerWordAnalyzer.normalize(word.text)
+            return text.isEmpty ? nil : (text, word.start)
         }
-        return counts.values.filter { $0 >= 3 }.count
-    }
+        guard tokens.count >= 3 else { return [] }
 
+        var counts: [String: Int] = [:]
+        var firstStart: [String: Double] = [:]
+        for i in 0...(tokens.count - 3) {
+            let phrase = tokens[i..<i + 3].map { $0.text }.joined(separator: " ")
+            counts[phrase, default: 0] += 1
+            if firstStart[phrase] == nil { firstStart[phrase] = tokens[i].start }
+        }
+
+        return counts
+            .filter { $0.value >= 3 }
+            .map { (phrase: $0.key, count: $0.value, start: firstStart[$0.key] ?? 0) }
+            .sorted { $0.start < $1.start }
+    }
     // MARK: - Math helpers
 
     private static func spanMinutes(_ words: [TranscriptWord]) -> Double {
