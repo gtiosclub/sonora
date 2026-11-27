@@ -78,6 +78,13 @@ enum UserProgressService {
             ], forDocument: progressRef, merge: true)
             return nil
         }
+        
+        do {
+            try await AchievementService.evaluate(userId: userId, sourceId: sessionID)
+        }
+        catch {
+            print("Achievement check failed: \(error.localizedDescription)")
+        }
     }
 
     // MARK: - Drills
@@ -107,6 +114,13 @@ enum UserProgressService {
                 "lifetimeXP": FieldValue.increment(Int64(max(0, xp)))
             ], forDocument: progressRef, merge: true)
             return nil
+        }
+        
+        do {
+            try await AchievementService.evaluate(userId: drill.userId, sourceId: drill.id)
+        }
+        catch {
+            print("Achievement check failed: \(error.localizedDescription)")
         }
     }
 }

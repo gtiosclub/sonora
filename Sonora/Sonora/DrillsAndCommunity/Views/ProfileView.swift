@@ -56,6 +56,11 @@ struct ProfileView: View {
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 24)
+            .navigationDestination(isPresented: $viewModel.showProgress) {
+                SpeakingProgressView(viewModel: viewModel.makeProgressViewModel())
+            }
+            .task { await viewModel.load() }
+            .refreshable { await viewModel.load() }
         }
         .fontDesign(.rounded)
         .foregroundStyle(ProfilePalette.primaryText)
@@ -111,7 +116,55 @@ struct ProfileView: View {
         Task {
             await viewModel.loadFriendCount()
             await loadPending()
+    private var journey: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Text("Your speaking journey")
+                .font(.title3.weight(.bold))
+
+            HStack(spacing: 10) {
+                StatCard(systemImage: "mic.fill", tint: .secondary,
+                         value: viewModel.sessionsText, label: "Sessions")
+                StatCard(systemImage: "clock", tint: .secondary,
+                         value: viewModel.speakingTimeText, label: "Speaking time")
+                StatCard(systemImage: "flame.fill", tint: .profileAccent,
+                         value: viewModel.streakText, label: "Streak")
+            }
+
+            TopicSection(title: "Mastered Topics",
+                         systemImage: "trophy.fill", tint: .yellow,
+                         items: viewModel.masteredTopics,
+                         addLabel: "Add mastered topic") { viewModel.addMasteredTopicTapped() }
+
+            TopicSection(title: "Challenging Topics",
+                         systemImage: "mountain.2.fill", tint: .red,
+                         items: viewModel.challengingTopics,
+                         addLabel: "Add challenging topic") { viewModel.addChallengingTopicTapped() }
+
+            TopicSection(title: "Mode",
+                         systemImage: "hammer.fill", tint: .gray,
+                         items: viewModel.modes,
+                         addLabel: "Add mode") { viewModel.addModeTapped() }
+            
+            Text("Badges")
+                .font(.title3.weight(.bold))
+
+            ForEach([AchievementDefinition.Category.drills, .sessions], id: \.self) { category in
+                Text(category == .drills ? "Drill badges" : "Session badges")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 72))], spacing: 12) {
+                    ForEach(viewModel.allBadges.filter { $0.category == category }) { badge in
+                        BadgeView(emoji: badge.emoji,
+                                  name: badge.name,
+                                  earned: viewModel.isEarned(badge))
+                    }
+                }
+            }
+            
+            ProgressPromoCard { viewModel.viewProgressTapped() }
         }
+        
     }
 
     private func loadPending() async {
