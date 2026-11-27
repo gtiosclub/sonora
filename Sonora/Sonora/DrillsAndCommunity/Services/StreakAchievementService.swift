@@ -1,5 +1,5 @@
 //
-//  AchievementService.swift
+//  StreakAchievementService.swift
 //  Sonora
 //
 //  Created by Sruthi Vangavolu on 11/16/26.
@@ -7,7 +7,7 @@
 
 import FirebaseFirestore
 
-enum AchievementService {
+enum StreakAchievementService {
     /// Streak tiers every 5 days: 5, 10, 15, ...
     static let streakTierSize = 5
 
