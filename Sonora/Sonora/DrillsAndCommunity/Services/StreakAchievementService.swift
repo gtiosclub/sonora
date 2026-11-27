@@ -26,6 +26,7 @@ enum StreakAchievementService {
             id: "streak-\(tier)",
             name: "\(tier)-day streak",
             description: "Practice \(tier) days in a row",
+            emoji: "🔥",
             artworkName: "🔥",
             category: .streak,
             target: tier

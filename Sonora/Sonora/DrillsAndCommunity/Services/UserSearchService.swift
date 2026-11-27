@@ -60,6 +60,20 @@ final class UserSearchService {
         return makeUser(id: doc.documentID, data: data)
     }
 
+    private func findUser(key: String, fallbackField: String, value: String) async throws -> FoundUser? {
+        let lowered = value.lowercased()
+        let snapshot = try await db.collection(Self.collectionName)
+            .whereField(key, isEqualTo: lowered)
+            .limit(to: 1)
+            .getDocuments()
+        if let user = makeFoundUser(from: snapshot) { return user }
+        let fallback = try await db.collection(Self.collectionName)
+            .whereField(fallbackField, isEqualTo: value)
+            .limit(to: 1)
+            .getDocuments()
+        return makeFoundUser(from: fallback)
+    }
+
     private func makeFoundUser(from snapshot: QuerySnapshot) -> FoundUser? {
         guard let doc = snapshot.documents.first else { return nil }
         return makeUser(id: doc.documentID, data: doc.data())
