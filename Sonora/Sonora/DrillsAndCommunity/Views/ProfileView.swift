@@ -9,69 +9,113 @@ import SwiftUI
 
 struct ProfileView: View {
     @StateObject private var viewModel: ProfileViewModel
+    private let friendshipService: FriendshipServicing
 
-    init(viewModel: ProfileViewModel) {
+    @State private var showSettings = false
+    @State private var showNotifications = false
+    @State private var showFriends = false
+    @State private var pendingRequests = 0
+
+    init(viewModel: ProfileViewModel, friendshipService: FriendshipServicing) {
         _viewModel = StateObject(wrappedValue: viewModel)
+        self.friendshipService = friendshipService
     }
 
     var body: some View {
-            ScrollView {
-                VStack(spacing: 20) {
-                    ScreenHeader(title: "Profile", onBack: viewModel.onBack) {
-                        Button { viewModel.settingsTapped() } label: {
-                            Image(systemName: "gearshape")
-                                .font(.title3)
-                                .foregroundStyle(.primary)
+        ScrollView {
+            VStack(spacing: 16) {
+                SonoraTopBar(title: "Profile") {
+                    Button { showSettings = true } label: {
+                        Image(systemName: "gearshape")
+                            .font(.title2)
+                            .foregroundStyle(ProfilePalette.deepPlum)
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("Settings")
+                } trailing: {
+                    HStack(spacing: 8) {
+                        IconSquareButton(systemImage: "bell", label: "Friend requests",
+                                         badge: pendingRequests) { showNotifications = true }
+                        IconSquareButton(systemImage: "pencil", label: "Edit profile") {
+                            viewModel.editProfileTapped()
                         }
-                        .accessibilityLabel("Settings")
                     }
-
-                    identity
-
-                    if let error = viewModel.errorMessage {
-                        Text(error).font(.footnote).foregroundStyle(.red)
-                    }
-
-                    Divider()
-                    journey
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+
+                ProfileBody(
+                    data: displayData,
+                    onFriendsTapped: { showFriends = true },
+                    onAddMastered: { viewModel.addMasteredTopicTapped() },
+                    onAddChallenging: { viewModel.addChallengingTopicTapped() },
+                    onViewProgress: { viewModel.viewProgressTapped() }
+                ) { }
+
+                if let error = viewModel.errorMessage {
+                    Text(error).font(.footnote).foregroundStyle(.red)
+                }
             }
-            .fontDesign(.rounded)
-            .background(Color(.systemBackground))
-            .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(isPresented: $viewModel.showEditProfile) {
-                EditProfileView(viewModel: viewModel.makeEditViewModel())
-            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 24)
             .navigationDestination(isPresented: $viewModel.showProgress) {
                 SpeakingProgressView(viewModel: viewModel.makeProgressViewModel())
             }
             .task { await viewModel.load() }
             .refreshable { await viewModel.load() }
         }
-
-    // MARK: - Sections
-
-    private var identity: some View {
-        VStack(spacing: 6) {
-            ProfileAvatar(initials: viewModel.initials)
-            Text(viewModel.displayName)
-                .font(.title2.weight(.bold))
-                .padding(.top, 8)
-            Text(viewModel.handle)
-                .foregroundStyle(.secondary)
-            Button("Edit Profile") { viewModel.editProfileTapped() }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.primary)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 7)
-                .background(Capsule().fill(Color(.secondarySystemBackground)))
-                .overlay(Capsule().strokeBorder(Color(.systemGray4), lineWidth: 1))
-                .padding(.top, 4)
+        .fontDesign(.rounded)
+        .foregroundStyle(ProfilePalette.primaryText)
+        .background(ProfilePalette.softBeige.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        // existing destinations
+        .navigationDestination(isPresented: $viewModel.showEditProfile) {
+            EditProfileView(viewModel: viewModel.makeEditViewModel())
+        }
+        .navigationDestination(isPresented: $viewModel.showProgress) {
+            SpeakingProgressView(viewModel: viewModel.makeProgressViewModel(),
+                                 initials: viewModel.initials)
+        }
+        // new destinations
+        .navigationDestination(isPresented: $showSettings) {
+            SettingsView(initials: viewModel.initials,
+                         makeEditViewModel: { viewModel.makeEditViewModel() })
+        }
+        .navigationDestination(isPresented: $showNotifications) {
+            FriendRequestsView(viewModel: FriendRequestsViewModel(service: friendshipService),
+                               service: friendshipService)
+        }
+        .navigationDestination(isPresented: $showFriends) {
+            FriendsListView(viewModel: FriendsListViewModel(service: friendshipService),
+                            service: friendshipService)
+        }
+        .onChange(of: showNotifications) { _, isOpen in if !isOpen { refreshCounts() } }
+        .onChange(of: showFriends) { _, isOpen in if !isOpen { refreshCounts() } }
+        .task {
+            await viewModel.load()
+            await viewModel.loadFriendCount()
+            await loadPending()
         }
     }
 
+    private var displayData: ProfileDisplayData {
+        ProfileDisplayData(
+            displayName: viewModel.displayName,
+            pronouns: viewModel.pronouns,
+            initials: viewModel.initials,
+            drills: viewModel.drillsText,
+            sessions: viewModel.sessionsText,
+            friends: viewModel.friendsText,
+            speakingTime: viewModel.speakingTimeText,
+            streak: viewModel.streakText,
+            bio: viewModel.bio,
+            mastered: viewModel.masteredTopics,
+            challenging: viewModel.challengingTopics
+        )
+    }
+
+    private func refreshCounts() {
+        Task {
+            await viewModel.loadFriendCount()
+            await loadPending()
     private var journey: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Your speaking journey")
@@ -122,10 +166,15 @@ struct ProfileView: View {
         }
         
     }
+
+    private func loadPending() async {
+        pendingRequests = (try? await friendshipService.incomingRequests().count) ?? 0
+    }
 }
 
 #Preview {
     NavigationStack {
-        ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5))
+        ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5),
+                    friendshipService: MockFriendshipService())
     }
 }

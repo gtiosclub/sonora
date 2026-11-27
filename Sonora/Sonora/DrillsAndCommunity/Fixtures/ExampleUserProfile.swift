@@ -20,7 +20,7 @@ let exampleUserProfile = UserProfile(
     username: "johndoe",
     email: "hello@gmail.com",
     phoneNumber: "111-111-1111",
-    bio: "I love Webtoons",
+    bio: "Sonora will win Demo Day!",
     totalSessions: 24,
     totalSpeakingSeconds: 12_600,   // 3.5h
     masteredTopics: ["Conservacy", "Agriculture"],

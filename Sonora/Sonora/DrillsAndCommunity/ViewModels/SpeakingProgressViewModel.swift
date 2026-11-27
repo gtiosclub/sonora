@@ -22,6 +22,13 @@ struct SkillSummary: Identifiable, Equatable {
     var scoreText: String { "\(clampedScore)/100" }
 }
 
+/// One row of the redesigned heatmap (already in display order).
+struct HeatMapRow: Identifiable {
+    let name: String
+    let colors: [RGBColor]
+    var id: String { name }
+}
+
 @MainActor
 final class SpeakingProgressViewModel: ObservableObject {
 
@@ -31,14 +38,81 @@ final class SpeakingProgressViewModel: ObservableObject {
     let heatMapViewModel: HeatMapViewModel
     private let sessionScores: [SessionSkillScore]
 
+    /// Index of the tapped heatmap column (nil = nothing selected).
+    @Published var selectedSession: Int?
+
+    /// Row order in the new design (the heatmap data itself keeps its own order).
+    static let displayOrder = ["Clarity", "Content", "Engagement", "Confidence"]
+
     init(sessionScores: [SessionSkillScore]? = nil) {
         // nil -> sample data (swap for real data once Firebase is connected)
         let scores = sessionScores ?? exampleSessionScores
         self.sessionScores = scores
-        self.heatMapViewModel = HeatMapViewModel(sessionScores: scores)
+        // Plum gradient from the new design (light lavender -> deep plum #504E76)
+        self.heatMapViewModel = HeatMapViewModel(
+            sessionScores: scores,
+            lowestColor: RGBColor(red: 0.89, green: 0.89, blue: 0.96),
+            highestColor: RGBColor(red: 80 / 255, green: 78 / 255, blue: 118 / 255)
+        )
     }
 
     var hasSessions: Bool { !sessionScores.isEmpty }
+
+    // MARK: - Heatmap (new design)
+
+    /// Heatmap rows reordered to Clarity, Content, Engaging, Confidence.
+    var heatMapRows: [HeatMapRow] {
+        let grid = heatMapViewModel.grid
+        let names = heatMapViewModel.skills
+        return Self.displayOrder.compactMap { name in
+            guard let i = names.firstIndex(of: name), i < grid.count else { return nil }
+            return HeatMapRow(name: name, colors: grid[i])
+        }
+    }
+
+    /// Short label next to the heatmap rows.
+    static func heatMapLabel(_ name: String) -> String { name == "Engagement" ? "Engaging" : name }
+
+    /// Title in the detail card.
+    static func cardTitle(_ name: String) -> String {
+        switch name {
+        case "Clarity": return "Speaking Clarity"
+        case "Engagement": return "Engaging"
+        default: return name
+        }
+    }
+
+    // MARK: - Session selection
+
+    var selectorTitle: String {
+        selectedSession.map { "Session #\($0 + 1)" } ?? "Select a session"
+    }
+
+    func selectSession(_ index: Int) {
+        selectedSession = (selectedSession == index) ? nil : index
+    }
+
+    /// Tapping the green bar: collapse if open, otherwise open the latest session.
+    func toggleSelector() {
+        if selectedSession != nil {
+            selectedSession = nil
+        } else {
+            let count = heatMapViewModel.displayedSessions.count
+            selectedSession = count > 0 ? count - 1 : nil
+        }
+    }
+
+    /// Skill rows for one heatmap column, in display order.
+    func skills(forSession index: Int) -> [SkillSummary] {
+        let sessions = heatMapViewModel.displayedSessions
+        guard sessions.indices.contains(index) else { return [] }
+        let s = sessions[index]
+        let byName: [String: Skill] = [
+            "Clarity": s.clarity, "Content": s.content,
+            "Engagement": s.engagement, "Confidence": s.confidence
+        ]
+        return Self.displayOrder.compactMap { name in byName[name].map { summary(name, $0) } }
+    }
 
     /// Skill rows for the most recent session (same skill order as the heatmap).
     var latestSkills: [SkillSummary] {
