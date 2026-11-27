@@ -1,5 +1,5 @@
 //
-//  DebateDrillDetailView.swift
+//  DrillDetailView.swift
 //  Sonora
 //
 //  Created by Eshaan Dixit on 10/13/26.
@@ -7,50 +7,26 @@
 
 import SwiftUI
 
-extension DrillTaskType {
-    var title: String {
-        switch self {
-        case .rebuttal: "Rebuttal"
-        case .analyzeSession: "Session review"
-        case .newArgument: "New argument"
-        case .argueOtherSide: "Argue the other side"
-        case .closingStatement: "Closing statement"
-        case .crossExamination: "Cross-examination"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .rebuttal: "arrow.uturn.backward"
-        case .analyzeSession: "magnifyingglass"
-        case .newArgument: "lightbulb"
-        case .argueOtherSide: "arrow.left.arrow.right"
-        case .closingStatement: "flag"
-        case .crossExamination: "questionmark.bubble"
-        }
-    }
-}
-
-struct DebateDrillDetailView: View {
-    let debate: Session
+struct DrillDetailView: View {
+    let session: Session
     let responseMode: DrillResponseMode
-    let taskType: DrillTaskType
+    let drill: any DrillKind
     let drillText: String
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                SonoraPageHeader(title: "Your drill", subtitle: debate.displayPrompt)
+                SonoraPageHeader(title: "Your drill", subtitle: session.displayPrompt)
 
                 VStack(alignment: .leading, spacing: 12) {
                     HStack(spacing: 12) {
-                        Image(systemName: taskType.icon)
+                        Image(systemName: drill.icon)
                             .font(.system(size: 15, weight: .semibold))
                             .foregroundStyle(SonoraColor.accent)
                             .frame(width: 36, height: 36)
                             .background(SonoraColor.accentLight, in: Circle())
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(taskType.title)
+                            Text(drill.title)
                                 .font(.system(size: 16, weight: .semibold))
                                 .foregroundStyle(SonoraColor.textPrimary)
                             Text("2 min drill")
@@ -65,10 +41,10 @@ struct DebateDrillDetailView: View {
                 }
                 .sonoraCard()
 
-                if let skills = debate.sessionSkillScore,
+                if let skills = session.sessionSkillScore,
                    let weakest = skills.weakest,
                    let strongest = skills.strongest {
-                    SonoraSectionHeader("From that debate")
+                    SonoraSectionHeader("From that \(session.mode.title.lowercased())")
                         .padding(.top, 12)
                     VStack(spacing: 18) {
                         SonoraSkillBar(name: weakest.name, score: weakest.score, isWeak: true)
@@ -106,10 +82,10 @@ struct DebateDrillDetailView: View {
 
 #Preview {
     NavigationStack {
-        DebateDrillDetailView(
-            debate: DebateSessions.debateSession1,
+        DrillDetailView(
+            session: DebateSessions.debateSession1,
             responseMode: .audio,
-            taskType: .closingStatement,
+            drill: DrillTaskType.closingStatement,
             drillText: "Your argument didn't fully wrap up your stance. You should try delivering a concise closing statement for your side."
         )
     }

@@ -34,14 +34,26 @@ struct ContentView: View {
                 NavigationLink(destination: SkillProfileTestView()) {
                     Text("Go to SkillProfile Test View")
                 }
-
+                NavigationLink(destination: PreferenceProfileTestView()) {
+                    Text("Go to PreferenceProfile Test View")
+                }
                 NavigationLink(destination: DrillsCommunityTestView()) {
                     Text("Go to Drills & Community Test View")
                 }
-
-//                NavigationLink(destination: PairingSetupView()) {
-//                    Text("Go to Live Session Pairing View")
-//                }
+                
+                NavigationLink(destination: ProfileView(
+                    viewModel: ProfileViewModel(profile: exampleUserProfile, streak: 5),
+                    friendshipService: MockFriendshipService()
+                )) {
+                    Text("Go to Profile View")
+                }
+                NavigationLink(destination: FriendshipTestView()) {
+                    Text("Go to Friendship Test View")
+                }
+                NavigationLink(destination: AchievementTestView()) {
+                    Text("Go to Streak Badge Test View")
+                }
+                  
                 Button("Go to Live Session Pairing View") { showPairing = true }
 
                 NavigationLink(destination: SessionReviewView(
@@ -55,7 +67,6 @@ struct ContentView: View {
         .fullScreenCover(isPresented: $showPairing) {
             PairingSetupView()
         }
-        .padding()
     }
 
     /// Offline fallback transcript for the Analysis demo flow.
