@@ -17,7 +17,7 @@ struct AchievementTestView: View {
     var body: some View {
         List {
             Section("Current streak badge") {
-                if let badge, let definition = AchievementService.streakAchievement(for: badge) {
+                if let badge, let definition = StreakAchievementService.streakAchievement(for: badge) {
                     Text("\(definition.artworkName) \(definition.name)")
                         .font(.title2.bold())
                     Text("Earned \(badge.earnedAt.formatted(date: .abbreviated, time: .shortened))")
@@ -47,7 +47,7 @@ struct AchievementTestView: View {
         guard let uid = auth.userID else { status = "Not signed in"; return }
         do {
             streak = try await UserService.getStreak(userID: uid)
-            badge = try await AchievementService.fetchStreakAchievement(userId: uid)
+            badge = try await StreakAchievementService.fetchStreakAchievement(userId: uid)
         } catch {
             status = "❌ Load failed: \(error.localizedDescription)"
         }

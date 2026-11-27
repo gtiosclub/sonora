@@ -14,13 +14,17 @@ struct FoundUser: Identifiable, Equatable {
     let displayName: String
 }
 
-/// Finds another user by username or email address. Not case-sensitive.
+/// Finds users by username, phone number, or ID.
 final class UserSearchService {
 
-    // Same collection and fields AuthManager.signUp writes (see User.swift).
+    // ⚠️ Check these against Firestore Database -> Data in the Firebase Console.
+    // You have both "Users" and "users" collections, so look at which one holds
+    // real accounts with a username and phone number, and match it exactly.
+    // FirestoreProfileRepository uses the same collection name; keep them in sync.
     private static let collectionName = "Users"
     private static let usernameField  = "username"
     private static let emailField     = "email"
+    private static let phoneField = "phoneNumber"
     // Lowercase copies written by AuthManager (see UserService.searchKeys).
     private static let usernameKey    = "usernameLowercase"
     private static let emailKey       = "emailLowercase"
@@ -38,30 +42,46 @@ final class UserSearchService {
         try await findUser(key: Self.emailKey, fallbackField: Self.emailField, value: email)
     }
 
-    /// Matches the lowercase key first. Accounts that haven't opened the app since the
-    /// keys were added don't have them yet, so fall back to the original field,
-    /// trying the text as typed and all lowercase.
+    /// Matches the phone number as onboarding stores it (digits and a leading "+").
+    func findUser(phone: String) async throws -> FoundUser? {
+        let normalized = PhoneNumberFormatter.normalize(phone)
+        guard !normalized.isEmpty else { return nil }
+        let snapshot = try await db.collection(Self.collectionName)
+            .whereField(Self.phoneField, isEqualTo: normalized)
+            .limit(to: 1)
+            .getDocuments()
+        return makeFoundUser(from: snapshot)
+    }
+
+    /// Look up a user by their UID (used for friends lists).
+    func findUser(id: String) async throws -> FoundUser? {
+        let doc = try await db.collection(Self.collectionName).document(id).getDocument()
+        guard let data = doc.data() else { return nil }
+        return makeUser(id: doc.documentID, data: data)
+    }
+
     private func findUser(key: String, fallbackField: String, value: String) async throws -> FoundUser? {
-        let users = db.collection(Self.collectionName)
-
-        let byKey = try await users
-            .whereField(key, isEqualTo: value.lowercased())
+        let lowered = value.lowercased()
+        let snapshot = try await db.collection(Self.collectionName)
+            .whereField(key, isEqualTo: lowered)
             .limit(to: 1)
             .getDocuments()
-        if let found = makeFoundUser(from: byKey) { return found }
-
-        let byField = try await users
-            .whereField(fallbackField, in: Array(Set([value, value.lowercased()])))
+        if let user = makeFoundUser(from: snapshot) { return user }
+        let fallback = try await db.collection(Self.collectionName)
+            .whereField(fallbackField, isEqualTo: value)
             .limit(to: 1)
             .getDocuments()
-        return makeFoundUser(from: byField)
+        return makeFoundUser(from: fallback)
     }
 
     private func makeFoundUser(from snapshot: QuerySnapshot) -> FoundUser? {
         guard let doc = snapshot.documents.first else { return nil }
-        let data = doc.data()
+        return makeUser(id: doc.documentID, data: doc.data())
+    }
+
+    private func makeUser(id: String, data: [String: Any]) -> FoundUser {
         let username = data[Self.usernameField] as? String ?? ""
         let name = Self.nameFields.compactMap { data[$0] as? String }.first ?? username
-        return FoundUser(id: doc.documentID, username: username, displayName: name)
+        return FoundUser(id: id, username: username, displayName: name)
     }
 }
