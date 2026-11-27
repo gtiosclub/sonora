@@ -55,6 +55,8 @@ final class AuthManager {
         let db = Firestore.firestore()
         let batch = db.batch()
         try batch.setData(from: newUser, forDocument: db.collection("Users").document(uid))
+        batch.setData(UserService.searchKeys(username: username, email: email),
+                      forDocument: db.collection("Users").document(uid), merge: true)
         try batch.setData(from: newSkillProfile, forDocument: db.collection("SkillProfile").document(uid))
         try batch.setData(from: newPreferenceProfile, forDocument: db.collection("PreferencesProfile").document(uid))
         try await batch.commit()
@@ -73,6 +75,8 @@ final class AuthManager {
             user.lastLogin = Date()
             currentUser = user
             try await UserService.updateLastLogin(userID: userID, date: user.lastLogin)
+            // Backfills search keys for accounts made before they existed.
+            try await UserService.updateSearchKeys(for: user)
         } catch {
             print("Failed to load user: \(error.localizedDescription)")
         }
