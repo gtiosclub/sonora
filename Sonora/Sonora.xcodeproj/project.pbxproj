@@ -10,6 +10,7 @@
 		08EBC723305727FE00DED16D /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 08EBC722305727FE00DED16D /* FirebaseCore */; };
 		08EBC7253057280200DED16D /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 08EBC7243057280200DED16D /* FirebaseAuth */; };
 		08EBC7273057280700DED16D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 08EBC7263057280700DED16D /* FirebaseFirestore */; };
+		7DAD64DE30ABD366007D9B46 /* RtcBasic in Frameworks */ = {isa = PBXBuildFile; productRef = 7DAD64DD30ABD366007D9B46 /* RtcBasic */; };
 		A1B2C3D4E5F6071829304A03 /* RealtimeAPI in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F6071829304A02 /* RealtimeAPI */; };
 /* End PBXBuildFile section */
 
@@ -34,6 +35,7 @@
 				08EBC7253057280200DED16D /* FirebaseAuth in Frameworks */,
 				08EBC7273057280700DED16D /* FirebaseFirestore in Frameworks */,
 				A1B2C3D4E5F6071829304A03 /* RealtimeAPI in Frameworks */,
+				7DAD64DE30ABD366007D9B46 /* RtcBasic in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,6 +90,7 @@
 				08EBC7243057280200DED16D /* FirebaseAuth */,
 				08EBC7263057280700DED16D /* FirebaseFirestore */,
 				A1B2C3D4E5F6071829304A02 /* RealtimeAPI */,
+				7DAD64DD30ABD366007D9B46 /* RtcBasic */,
 			);
 			productName = Sonora;
 			productReference = CED3477230571E5C0016E355 /* Sonora.app */;
@@ -120,6 +123,7 @@
 			packageReferences = (
 				08EBC720305726FF00DED16D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				A1B2C3D4E5F6071829304A01 /* XCRemoteSwiftPackageReference "swift-realtime-openai" */,
+				7DAD64D830ABD120007D9B46 /* XCRemoteSwiftPackageReference "AgoraRtcEngine_iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CED3477330571E5C0016E355 /* Products */;
@@ -278,8 +282,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ALFPM5DWF4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Sonora needs camera access for video calls";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sonora needs microphone access for video calls.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -309,8 +316,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = ALFPM5DWF4;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Sonora needs camera access for video calls";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Sonora needs microphone access for video calls.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -365,6 +375,14 @@
 				minimumVersion = 12.19.1;
 			};
 		};
+		7DAD64D830ABD120007D9B46 /* XCRemoteSwiftPackageReference "AgoraRtcEngine_iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/AgoraIO/AgoraRtcEngine_iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.7.0;
+			};
+		};
 		A1B2C3D4E5F6071829304A01 /* XCRemoteSwiftPackageReference "swift-realtime-openai" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/m1guelpf/swift-realtime-openai";
@@ -390,6 +408,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 08EBC720305726FF00DED16D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		7DAD64DD30ABD366007D9B46 /* RtcBasic */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7DAD64D830ABD120007D9B46 /* XCRemoteSwiftPackageReference "AgoraRtcEngine_iOS" */;
+			productName = RtcBasic;
 		};
 		A1B2C3D4E5F6071829304A02 /* RealtimeAPI */ = {
 			isa = XCSwiftPackageProductDependency;
