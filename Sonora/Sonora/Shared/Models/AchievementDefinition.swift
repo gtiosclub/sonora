@@ -10,6 +10,7 @@ struct AchievementDefinition: Identifiable, Codable, Equatable {
     var id: String
     var name: String
     var description: String
+    var emoji: String
     var artworkName: String
     var category: Category
 

@@ -50,6 +50,9 @@ struct ContentView: View {
                 NavigationLink(destination: FriendshipTestView()) {
                     Text("Go to Friendship Test View")
                 }
+                NavigationLink(destination: AchievementTestView()) {
+                    Text("Go to Streak Badge Test View")
+                }
                   
                 Button("Go to Live Session Pairing View") { showPairing = true }
 

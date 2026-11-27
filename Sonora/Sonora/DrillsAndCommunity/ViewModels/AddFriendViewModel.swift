@@ -11,7 +11,7 @@ import FirebaseAuth
 
 enum UserSearchMode: String, CaseIterable, Identifiable {
     case username = "Username"
-    case phone = "Phone number"
+    case email = "Email"
 
     var id: String { rawValue }
 }
@@ -38,7 +38,7 @@ final class AddFriendViewModel: ObservableObject {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isLoading
     }
 
-    /// Clears the previous search (called when switching username/phone).
+    /// Clears the previous search (called when switching username/email).
     func reset() {
         query = ""
         result = nil
@@ -60,7 +60,7 @@ final class AddFriendViewModel: ObservableObject {
             let found: FoundUser?
             switch mode {
             case .username: found = try await userSearch.findUser(username: trimmed)
-            case .phone:    found = try await userSearch.findUser(phone: trimmed)
+            case .email:    found = try await userSearch.findUser(email: trimmed)
             }
 
             guard let found else {

@@ -50,6 +50,22 @@ struct ProfileView: View {
                     onViewProgress: { viewModel.viewProgressTapped() }
                 ) { }
 
+                ProfileSection(title: "Badges:") {
+                    ForEach([AchievementDefinition.Category.drills, .sessions], id: \.self) { category in
+                        Text(category == .drills ? "Drill badges" : "Session badges")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(ProfilePalette.secondaryText)
+
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 72))], spacing: 12) {
+                            ForEach(viewModel.allBadges.filter { $0.category == category }) { badge in
+                                BadgeView(emoji: badge.emoji,
+                                          name: badge.name,
+                                          earned: viewModel.isEarned(badge))
+                            }
+                        }
+                    }
+                }
+
                 if let error = viewModel.errorMessage {
                     Text(error).font(.footnote).foregroundStyle(.red)
                 }
@@ -85,6 +101,11 @@ struct ProfileView: View {
         .onChange(of: showNotifications) { _, isOpen in if !isOpen { refreshCounts() } }
         .onChange(of: showFriends) { _, isOpen in if !isOpen { refreshCounts() } }
         .task {
+            await viewModel.load()
+            await viewModel.loadFriendCount()
+            await loadPending()
+        }
+        .refreshable {
             await viewModel.load()
             await viewModel.loadFriendCount()
             await loadPending()
