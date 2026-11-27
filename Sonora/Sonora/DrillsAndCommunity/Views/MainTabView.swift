@@ -11,6 +11,9 @@ import SwiftUI
 struct MainTabView: View {
     @Environment(AuthManager.self) private var auth
     @State private var tab = Tab.home
+    // One shared instance so friend state survives tab switches.
+    // Swap for the Firebase FriendshipService once it conforms to FriendshipServicing.
+    @State private var friendshipService = MockFriendshipService()
 
     enum Tab: String, CaseIterable {
         case home = "Home", practice = "Practice", progress = "Progress", profile = "Profile"
@@ -36,7 +39,8 @@ struct MainTabView: View {
                 NavigationStack { SpeakingProgressView(viewModel: SpeakingProgressViewModel()) }
             case .profile:
                 NavigationStack {
-                    ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: auth.currentUser?.streak ?? 0))
+                    ProfileView(viewModel: ProfileViewModel(profile: exampleUserProfile, streak: auth.currentUser?.streak ?? 0),
+                                friendshipService: friendshipService)
                 }
             }
         }

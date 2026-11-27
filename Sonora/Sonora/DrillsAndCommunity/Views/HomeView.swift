@@ -243,22 +243,6 @@ struct HomeView: View {
     }
 }
 
-private struct HomeProgressBar: View {
-    let score: Int
-    let color: Color
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(HomeColor.track)
-                Capsule().fill(color)
-                    .frame(width: geo.size.width * CGFloat(min(max(score, 0), 100)) / 100)
-            }
-        }
-        .frame(height: 12)
-    }
-}
-
 private extension View {
     func homeCard() -> some View {
         padding(16)

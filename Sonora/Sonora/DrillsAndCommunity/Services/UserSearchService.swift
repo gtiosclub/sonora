@@ -14,15 +14,16 @@ struct FoundUser: Identifiable, Equatable {
     let displayName: String
 }
 
-/// Finds another user by username or phone number.
+/// Finds another user by username or email address. Not case-sensitive.
 final class UserSearchService {
 
-    // ⚠️ Check these against Firestore Database -> Data in the Firebase Console.
-    // You have both "Users" and "users" collections, so look at which one holds
-    // real accounts with a username and phone number, and match it exactly.
-    private static let collectionName = "users"
+    // Same collection and fields AuthManager.signUp writes (see User.swift).
+    private static let collectionName = "Users"
     private static let usernameField  = "username"
-    private static let phoneField     = "phoneNumber"
+    private static let emailField     = "email"
+    // Lowercase copies written by AuthManager (see UserService.searchKeys).
+    private static let usernameKey    = "usernameLowercase"
+    private static let emailKey       = "emailLowercase"
     private static let nameFields     = ["fullName", "displayName", "name"]
 
     // lazy so creating this object doesn't touch Firebase until it's used
@@ -30,20 +31,33 @@ final class UserSearchService {
 
     func findUser(username: String) async throws -> FoundUser? {
         let cleaned = username.hasPrefix("@") ? String(username.dropFirst()) : username
-        return try await findUser(field: Self.usernameField, value: cleaned)
+        return try await findUser(key: Self.usernameKey, fallbackField: Self.usernameField, value: cleaned)
     }
 
-    /// Exact match on the phone number as it's stored in Firestore.
-    func findUser(phone: String) async throws -> FoundUser? {
-        try await findUser(field: Self.phoneField, value: phone)
+    func findUser(email: String) async throws -> FoundUser? {
+        try await findUser(key: Self.emailKey, fallbackField: Self.emailField, value: email)
     }
 
-    private func findUser(field: String, value: String) async throws -> FoundUser? {
-        let snapshot = try await db.collection(Self.collectionName)
-            .whereField(field, isEqualTo: value)
+    /// Matches the lowercase key first. Accounts that haven't opened the app since the
+    /// keys were added don't have them yet, so fall back to the original field,
+    /// trying the text as typed and all lowercase.
+    private func findUser(key: String, fallbackField: String, value: String) async throws -> FoundUser? {
+        let users = db.collection(Self.collectionName)
+
+        let byKey = try await users
+            .whereField(key, isEqualTo: value.lowercased())
             .limit(to: 1)
             .getDocuments()
+        if let found = makeFoundUser(from: byKey) { return found }
 
+        let byField = try await users
+            .whereField(fallbackField, in: Array(Set([value, value.lowercased()])))
+            .limit(to: 1)
+            .getDocuments()
+        return makeFoundUser(from: byField)
+    }
+
+    private func makeFoundUser(from snapshot: QuerySnapshot) -> FoundUser? {
         guard let doc = snapshot.documents.first else { return nil }
         let data = doc.data()
         let username = data[Self.usernameField] as? String ?? ""

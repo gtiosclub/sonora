@@ -75,9 +75,9 @@ struct AddFriendView: View {
     // MARK: - Pieces
 
     private var searchField: some View {
-        TextField(viewModel.mode == .phone ? "Phone number" : "@username",
+        TextField(viewModel.mode == .email ? "Email address" : "@username",
                   text: $viewModel.query)
-            .keyboardType(viewModel.mode == .phone ? .phonePad : .default)
+            .keyboardType(viewModel.mode == .email ? .emailAddress : .default)
             .textInputAutocapitalization(.never)
             .autocorrectionDisabled()
             .submitLabel(.search)
