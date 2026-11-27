@@ -241,7 +241,7 @@ func listenToSession(
         }
 }
 
-private func decodeSession(_ document: DocumentSnapshot) throws -> Session {
+func decodeSession(_ document: DocumentSnapshot) throws -> Session {
     if var session = try? document.data(as: Session.self) {
         session.id = document.documentID
         return session
