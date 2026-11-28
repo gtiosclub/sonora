@@ -14,14 +14,19 @@ struct WaitingView: View {
 
     @State private var elapsedSeconds = 0
     @State private var showAIPrompt = false
-    @State private var showTimeoutError = false
     @State private var showAIError = false
     @State private var isWaiting = true
+    @State private var hasReachedDeadline = false
+    @State private var hasPromptedForEmptyQueue = false
+    @State private var isClaimingMatch = false
+    @State private var pendingCandidateUpdate: [WaitingUser]?
 
     @State private var sessionListener: ListenerRegistration?
+    @State private var queueListener: ListenerRegistration?
     @State private var listenerError: String?
     @State private var routedSessionId: String?
 
+    private let matchingDeadline = 120
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     init(
@@ -51,7 +56,7 @@ struct WaitingView: View {
                 }
                 .frame(height: 230)
 
-                Text("Estimated wait time: 2 mins")
+                Text("We'll match you with the best available person within 2 minutes.")
                     .font(.caption)
                     .foregroundColor(.gray)
 
@@ -71,18 +76,7 @@ struct WaitingView: View {
 
                 Spacer()
 
-                Button {
-                    isWaiting = false
-                    stopListening()
-                    Task {
-                        do {
-                            try await cancelWaitingRequest(userId: auth.userID ?? "")
-                        } catch {
-                            print("Failed to cancel waiting request: \(error)")
-                        }
-                    }
-                    dismiss()
-                } label: {
+                Button(action: leaveQueue) {
                     Text("Cancel")
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
@@ -95,19 +89,16 @@ struct WaitingView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
-        .alert("Still looking for a match", isPresented: $showAIPrompt) {
+        .alert("No live match is available", isPresented: $showAIPrompt) {
             Button("Practice with AI") {
                 isWaiting = false
+                stopListening()
                 Task { await switchToAI() }
             }
-            Button("Keep Waiting", role: .cancel) { }
+            Button("Leave queue", role: .destructive, action: leaveQueue)
+            Button("Keep waiting", role: .cancel) { }
         } message: {
-            Text("No live match has been found yet. Would you like to practice with AI instead?")
-        }
-        .alert("Matchmaking Timed Out", isPresented: $showTimeoutError) {
-            Button("OK") { dismiss() }
-        } message: {
-            Text("We couldn't find a live match within 5 minutes. Please try again later.")
+            Text("There isn't a compatible person in the queue right now. Would you like to practice with AI or leave the queue?")
         }
         .alert("Unable to Start AI Practice", isPresented: $showAIError) {
             Button("OK") { dismiss() }
@@ -115,30 +106,19 @@ struct WaitingView: View {
             Text("Something went wrong while starting your AI session. Please try again.")
         }
         .onReceive(timer) { _ in
-            guard isWaiting, !showTimeoutError else { return }
+            guard isWaiting else { return }
 
-            elapsedSeconds += 1
+            elapsedSeconds = max(0, Int(Date().timeIntervalSince(matchingStartedAt)))
+            guard elapsedSeconds >= matchingDeadline, !hasReachedDeadline else { return }
 
-            if elapsedSeconds == 120 {
-                showAIPrompt = true
-            }
-
-            if elapsedSeconds == 300 {
-                isWaiting = false
-                stopListening()
-                Task {
-                    var wasRemoved = await handleTimeout()
-                    if !wasRemoved { wasRemoved = await handleTimeout() }
-                    print(wasRemoved
-                          ? "Matchmaking timeout cleanup successful"
-                          : "Matchmaking timeout cleanup failed")
-                    showTimeoutError = true
-                }
-            }
+            hasReachedDeadline = true
+            Task { await matchBestAvailableCandidate() }
         }
         .onAppear {
             isWaiting = true
+            elapsedSeconds = max(0, Int(Date().timeIntervalSince(matchingStartedAt)))
             startListeningForSession()
+            startListeningForCandidates()
         }
         .onDisappear {
             isWaiting = false
@@ -146,15 +126,118 @@ struct WaitingView: View {
         }
     }
 
-    // MARK: - AI fallback
+    // MARK: - Candidate selection
+
+    private func handleCandidateUpdate(_ candidates: [WaitingUser]) async {
+        guard isWaiting else { return }
+
+        if isClaimingMatch {
+            pendingCandidateUpdate = candidates
+            return
+        }
+
+        guard !candidates.isEmpty else {
+            if !hasPromptedForEmptyQueue {
+                hasPromptedForEmptyQueue = true
+                showAIPrompt = true
+            }
+            return
+        }
+
+        hasPromptedForEmptyQueue = false
+        await tryMatching(candidates, requireThreshold: true)
+    }
+
+    private func matchBestAvailableCandidate() async {
+        while isWaiting && isClaimingMatch {
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+        guard isWaiting, let userId = auth.userID else { return }
+
+        do {
+            // Another client can claim a candidate between the query and transaction,
+            // so refresh once and try the current best candidates again.
+            for _ in 0..<2 {
+                let latestCandidates = try await findWaitingCandidates(
+                    userId: userId,
+                    mode: mode,
+                    topic: topic
+                )
+
+                guard isWaiting else { return }
+                if latestCandidates.isEmpty {
+                    showAIPrompt = true
+                    return
+                }
+
+                await tryMatching(latestCandidates, requireThreshold: false)
+                guard isWaiting else { return }
+            }
+
+            showAIPrompt = true
+        } catch {
+            listenerError = "Couldn't check the queue: \(error.localizedDescription)"
+        }
+    }
+
+    private func tryMatching(_ candidates: [WaitingUser], requireThreshold: Bool) async {
+        guard isWaiting, let userId = auth.userID else { return }
+        guard !isClaimingMatch else {
+            pendingCandidateUpdate = candidates
+            return
+        }
+
+        isClaimingMatch = true
+        defer {
+            isClaimingMatch = false
+            if let latestCandidates = pendingCandidateUpdate {
+                pendingCandidateUpdate = nil
+                Task { @MainActor in
+                    await handleCandidateUpdate(latestCandidates)
+                }
+            }
+        }
+
+        let rankedCandidates: [(candidate: WaitingUser, score: Double)]
+        do {
+            rankedCandidates = try await rankWaitingCandidates(
+                userID: userId,
+                candidates: candidates
+            )
+        } catch {
+            listenerError = "Couldn't calculate match scores: \(error.localizedDescription)"
+            return
+        }
+
+        for rankedCandidate in rankedCandidates {
+            if requireThreshold && rankedCandidate.score < matchSimilarityThreshold { break }
+
+            do {
+                guard let session = try await claimWaitingCandidate(
+                    userId: userId,
+                    candidate: rankedCandidate.candidate,
+                    mode: mode,
+                    topic: topic
+                ) else { continue }
+
+                guard session.id != routedSessionId else { return }
+                routedSessionId = session.id
+                isWaiting = false
+                stopListening()
+                onSessionUpdate(session)
+                return
+            } catch {
+                listenerError = "Couldn't create a match: \(error.localizedDescription)"
+                return
+            }
+        }
+    }
 
     private func switchToAI() async {
         guard let userId = auth.userID else {
             showAIError = true
             return
         }
-
-        stopListening()   // don't let a late live match fight with the AI session
 
         do {
             try await cancelWaitingRequest(userId: userId)
@@ -166,40 +249,56 @@ struct WaitingView: View {
         }
     }
 
-    // MARK: - Timeout
-
-    private func handleTimeout() async -> Bool {
-        guard let userId = auth.userID else { return false }
-
-        do {
-            try await cancelWaitingRequest(userId: userId)
-            return true
-        } catch {
-            print("Failed to remove user from queue: \(error)")
-            return false
+    private func leaveQueue() {
+        isWaiting = false
+        stopListening()
+        Task {
+            if let userId = auth.userID {
+                do {
+                    try await cancelWaitingRequest(userId: userId)
+                } catch {
+                    print("Failed to remove user from queue: \(error)")
+                }
+            }
+            dismiss()
         }
     }
 
-    // MARK: - Listener
+    // MARK: - Listeners
 
     private func stopListening() {
         sessionListener?.remove()
         sessionListener = nil
+        queueListener?.remove()
+        queueListener = nil
+    }
+
+    private func startListeningForCandidates() {
+        guard queueListener == nil, let userId = auth.userID else { return }
+
+        queueListener = listenForWaitingCandidates(
+            userId: userId,
+            mode: mode,
+            topic: topic
+        ) { result in
+            Task { @MainActor in
+                switch result {
+                case .success(let candidates):
+                    await handleCandidateUpdate(candidates)
+                case .failure(let error):
+                    listenerError = "Couldn't listen for queue updates: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 
     private func startListeningForSession() {
-        guard sessionListener == nil, let userId = auth.userID else {
-            print("waiting: no listener (already listening or userID nil)")
-            return
-        }
-        print("waiting: listening as", userId)
+        guard sessionListener == nil, let userId = auth.userID else { return }
 
         sessionListener = listenForUserSessions(userId: userId, since: matchingStartedAt) { result in
             Task { @MainActor in
                 switch result {
                 case .success(let sessions):
-                    print("waiting: got", sessions.map { "\($0.id) \($0.status)" })
-
                     guard let session = sessions
                         .filter({ $0.status == .pending || $0.status == .active })
                         .max(by: { $0.createdAt < $1.createdAt }),
@@ -208,7 +307,7 @@ struct WaitingView: View {
                     routedSessionId = session.id
                     isWaiting = false
                     stopListening()
-                    onSessionUpdate(session)   // router does the navigation
+                    onSessionUpdate(session)
                 case .failure(let error):
                     listenerError = "Couldn't listen for a match: \(error.localizedDescription)"
                 }
