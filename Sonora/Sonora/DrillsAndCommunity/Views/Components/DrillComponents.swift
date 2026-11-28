@@ -14,29 +14,29 @@ struct SessionRow: View {
     let isSelected: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: isSelected ? "checkmark.circle.fill" : session.mode.icon)
-                .font(.system(size: 15))
-                .foregroundStyle(isSelected ? SonoraColor.accent : SonoraColor.textSecondary)
-                .frame(width: 34, height: 34)
-                .background(isSelected ? SonoraColor.accentLight : SonoraColor.background, in: Circle())
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: isSelected ? "checkmark" : session.mode.icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(isSelected ? .white : HomeColor.purple)
+                .frame(width: 38, height: 38)
+                .background(isSelected ? HomeColor.purple : Color(hex: 0xEDEBF8), in: Circle())
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(session.displayPrompt)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(SonoraColor.textPrimary)
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(HomeColor.purple)
                     .multilineTextAlignment(.leading)
                 Text(session.detailLine)
-                    .font(.footnote)
-                    .foregroundStyle(SonoraColor.textSecondary)
+                    .font(.caption)
+                    .foregroundStyle(HomeColor.inactive)
                 if let weakest = session.sessionSkillScore?.weakest {
-                    SonoraTag(text: "Weakest: \(weakest.name)")
-                        .padding(.top, 2)
+                    DrillPill(text: "Weakest: \(weakest.name)")
+                        .padding(.top, 4)
                 }
             }
             Spacer(minLength: 0)
         }
-        .sonoraCard(highlighted: isSelected)
+        .drillCard(selected: isSelected)
     }
 }
 
@@ -46,22 +46,35 @@ struct ResponseModePicker: View {
     @Binding var selection: DrillResponseMode
 
     var body: some View {
+        ThemedSegmentedPicker(options: DrillResponseMode.allCases, selection: $selection) { mode in
+            Label(mode.title, systemImage: mode.icon)
+        }
+    }
+}
+
+/// Segmented toggle styled like the tab bar: beige track, white selected segment.
+struct ThemedSegmentedPicker<Option: Hashable, LabelView: View>: View {
+    let options: [Option]
+    @Binding var selection: Option
+    @ViewBuilder let label: (Option) -> LabelView
+
+    var body: some View {
         HStack(spacing: 4) {
-            ForEach(DrillResponseMode.allCases) { mode in
-                let isOn = mode == selection
+            ForEach(options, id: \.self) { option in
+                let isOn = option == selection
                 Button {
-                    selection = mode
+                    selection = option
                 } label: {
-                    Label(mode.title, systemImage: mode.icon)
-                        .font(.subheadline.weight(isOn ? .semibold : .regular))
-                        .foregroundStyle(isOn ? SonoraColor.textPrimary : SonoraColor.textSecondary)
+                    label(option)
+                        .font(.system(size: 15, weight: isOn ? .bold : .regular))
+                        .foregroundStyle(isOn ? HomeColor.purple : HomeColor.inactive)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 11)
                         .background {
                             if isOn {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(SonoraColor.card)
-                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(SonoraColor.border))
+                                RoundedRectangle(cornerRadius: 14)
+                                    .fill(.white)
+                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(HomeColor.border))
                             }
                         }
                 }
@@ -69,6 +82,7 @@ struct ResponseModePicker: View {
             }
         }
         .padding(4)
-        .background(SonoraColor.track, in: RoundedRectangle(cornerRadius: 12))
+        .background(Color(hex: 0xF4F2EC), in: RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(HomeColor.border.opacity(0.6)))
     }
 }

@@ -15,68 +15,60 @@ struct DrillDetailView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                SonoraPageHeader(title: "Your drill", subtitle: session.displayPrompt)
+            VStack(alignment: .leading, spacing: 18) {
+                DrillTopBar(title: "Your drill")
 
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 12) {
-                        Image(systemName: drill.icon)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(SonoraColor.accent)
-                            .frame(width: 36, height: 36)
-                            .background(SonoraColor.accentLight, in: Circle())
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(drill.title)
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundStyle(SonoraColor.textPrimary)
-                            Text("2 min drill")
-                                .font(.footnote.weight(.semibold))
-                                .foregroundStyle(SonoraColor.accent)
-                        }
-                    }
+                DrillBanner(mood: .happy, title: drill.title, message: session.displayPrompt, badge: "2 min drill")
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Label("Coach's note", systemImage: drill.icon)
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(HomeColor.purple)
                     Text(drillText)
-                        .font(.subheadline)
-                        .foregroundStyle(SonoraColor.textPrimary)
+                        .font(.system(size: 15))
+                        .foregroundStyle(HomeColor.text)
                         .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .sonoraCard()
+                .drillCard()
 
                 if let skills = session.sessionSkillScore,
                    let weakest = skills.weakest,
                    let strongest = skills.strongest {
-                    SonoraSectionHeader("From that \(session.mode.title.lowercased())")
-                        .padding(.top, 12)
-                    VStack(spacing: 18) {
-                        SonoraSkillBar(name: weakest.name, score: weakest.score, isWeak: true)
-                        SonoraSkillBar(name: strongest.name, score: strongest.score)
+                    VStack(alignment: .leading, spacing: 12) {
+                        DrillSectionHeader("From that \(session.mode.title.lowercased())")
+                        VStack(spacing: 16) {
+                            DrillSkillBar(name: weakest.name, score: weakest.score, isWeak: true)
+                            DrillSkillBar(name: strongest.name, score: strongest.score)
+                        }
+                        .drillCard()
                     }
-                    .sonoraCard()
                 }
 
-                Label(responseMode.title, systemImage: responseMode.icon)
-                    .font(.subheadline)
-                    .foregroundStyle(SonoraColor.textSecondary)
-                    .padding(.top, 20)
-                    .padding(.bottom, 12)
+                VStack(spacing: 14) {
+                    Label(responseMode.title, systemImage: responseMode.icon)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(HomeColor.inactive)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-                Button {
-                } label: {
-                    Label("Start recording", systemImage: "record.circle")
-                }
-                .buttonStyle(SonoraPrimaryButtonStyle())
+                    Button {
+                    } label: {
+                        Label("Start recording", systemImage: "record.circle")
+                    }
+                    .buttonStyle(DrillPrimaryButtonStyle())
 
-                Button("Get a different drill") {
+                    Button("Get a different drill") {
+                    }
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(HomeColor.purple)
                 }
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(SonoraColor.accent)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 14)
+                .padding(.top, 4)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 24)
+            .padding(.vertical, 12)
         }
-        .background(SonoraColor.background.ignoresSafeArea())
-        .navigationBarTitleDisplayMode(.inline)
+        .background(HomeColor.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 
