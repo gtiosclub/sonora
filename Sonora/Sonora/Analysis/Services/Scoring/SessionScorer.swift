@@ -14,11 +14,10 @@ import Foundation
 ///   - Engaging:   pace variety, vocabulary variety (MATTR), repetition (transcript)
 ///
 /// Not yet scored (needs work the codebase doesn't have):
-///   - Confidence › posture stability (needs tuned sway/tilt thresholds)
 ///   - Engaging › gesture use (needs a waist reference joint) and audience hooks (LLM)
-///   - Content (entirely LLM)
-/// Those are left out of their category averages; `content` stays nil and is excluded
-/// from the overall until the LLM layer exists.
+/// Content is scored separately by `ContentScorer` (on-device LLM) in `SessionAnalyzer`,
+/// since it's async; `score(...)` here leaves `content` nil, and the overall folds it in
+/// later via `overall(for:speechType:)` when it's available.
 struct SessionScorer {
 
     struct Result {
@@ -182,7 +181,7 @@ struct SessionScorer {
         )
     }
 
-    // MARK: - Overall (content excluded + weights renormalized)
+    // MARK: - Overall (weights renormalized over the categories present)
 
     private static func overall(
         clarity: Double, confidence: Double, engaging: Double, speechType: SpeechType
@@ -190,6 +189,22 @@ struct SessionScorer {
         let w = speechType.weights
         let weighted = clarity * w.clarity + confidence * w.confidence + engaging * w.engagement
         let totalWeight = w.clarity + w.confidence + w.engagement
+        return toInt(totalWeight > 0 ? weighted / totalWeight : 0)
+    }
+
+    /// Recomputes the overall from an assembled `SessionScores`, folding in `content`
+    /// when it's present and renormalizing over whichever categories have a score.
+    /// Used by `SessionAnalyzer` once the async Content score (LLM) arrives.
+    static func overall(for scores: SessionScores, speechType: SpeechType) -> Int {
+        let w = speechType.weights
+        var weighted = Double(scores.clarity) * w.clarity
+            + Double(scores.confidence) * w.confidence
+            + Double(scores.engagement) * w.engagement
+        var totalWeight = w.clarity + w.confidence + w.engagement
+        if let content = scores.content {
+            weighted += Double(content) * w.content
+            totalWeight += w.content
+        }
         return toInt(totalWeight > 0 ? weighted / totalWeight : 0)
     }
 

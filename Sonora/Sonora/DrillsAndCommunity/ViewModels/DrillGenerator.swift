@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import FoundationModels
 
 protocol DrillKind {
     var rawValue: String { get }
@@ -15,7 +14,6 @@ protocol DrillKind {
     var instruction: String { get }
 }
 
-@Generable
 enum DrillTaskType: String, Codable, CaseIterable, DrillKind {
     case rebuttal
     case analyzeSession
@@ -58,7 +56,6 @@ enum DrillTaskType: String, Codable, CaseIterable, DrillKind {
     }
 }
 
-@Generable
 enum InterviewDrillType: String, Codable, CaseIterable, DrillKind {
     case starStructure
     case conciseAnswer
@@ -101,7 +98,6 @@ enum InterviewDrillType: String, Codable, CaseIterable, DrillKind {
     }
 }
 
-@Generable
 enum PresentationDrillType: String, Codable, CaseIterable, DrillKind {
     case openingHook
     case transitions
@@ -157,36 +153,6 @@ struct WrittenDrill {
     let assignment: String
 }
 
-@Generable
-struct GeneratedDebateDrill {
-    @Guide(description: "One short sentence, under 20 words, to the student about the debate that must name its subject in your own words (for example, \"your argument against X\" rather than quoting the prompt) and explain their main weakness from its summary, without mentioning any scores or numbers")
-    var feedback: String
-    @Guide(description: "The drill from the list that best targets that weakness")
-    var taskType: DrillTaskType
-    @Guide(description: "One short sentence suggesting that drill to the student, starting with a casual lead-in such as \"Try\" or \"You should try\", and staying close to the drill's description")
-    var assignment: String
-}
-
-@Generable
-struct GeneratedInterviewDrill {
-    @Guide(description: "One short sentence, under 20 words, to the candidate about their interview answer that must name what the question was about in your own words (for example, \"your answer about leading a team\" rather than quoting the question) and explain their main weakness from its summary, without mentioning any scores or numbers")
-    var feedback: String
-    @Guide(description: "The drill from the list that best targets that weakness")
-    var drill: InterviewDrillType
-    @Guide(description: "One short sentence suggesting that drill to the candidate, starting with a casual lead-in such as \"Try\" or \"You should try\", and staying close to the drill's description")
-    var assignment: String
-}
-
-@Generable
-struct GeneratedPresentationDrill {
-    @Guide(description: "One short sentence, under 20 words, to the speaker about their presentation that must name its topic in your own words (for example, \"your talk on X\" rather than quoting the title) and explain their main weakness from its summary, without mentioning any scores or numbers")
-    var feedback: String
-    @Guide(description: "The drill from the list that best targets that weakness")
-    var drill: PresentationDrillType
-    @Guide(description: "One short sentence suggesting that drill to the speaker, starting with a casual lead-in such as \"Try\" or \"You should try\", and staying close to the drill's description")
-    var assignment: String
-}
-
 enum DrillPromptText {
     static func instructions(for mode: Session.Mode) -> String {
         switch mode {
@@ -238,6 +204,28 @@ enum DrillPromptText {
 }
 
 extension Session.Mode {
+    /// What the model writes in `feedback`. Sent as the JSON schema field description.
+    var feedbackGuide: String {
+        switch self {
+        case .debate:
+            "One short sentence, under 20 words, to the student about the debate that must name its subject in your own words (for example, \"your argument against X\" rather than quoting the prompt) and explain their main weakness from its summary, without mentioning any scores or numbers"
+        case .interview:
+            "One short sentence, under 20 words, to the candidate about their interview answer that must name what the question was about in your own words (for example, \"your answer about leading a team\" rather than quoting the question) and explain their main weakness from its summary, without mentioning any scores or numbers"
+        case .speech:
+            "One short sentence, under 20 words, to the speaker about their presentation that must name its topic in your own words (for example, \"your talk on X\" rather than quoting the title) and explain their main weakness from its summary, without mentioning any scores or numbers"
+        }
+    }
+
+    /// What the model writes in `assignment`.
+    var assignmentGuide: String {
+        let person = switch self {
+        case .debate: "student"
+        case .interview: "candidate"
+        case .speech: "speaker"
+        }
+        return "One short sentence suggesting that drill to the \(person), starting with a casual lead-in such as \"Try\" or \"You should try\", and staying close to the drill's description. Describe what to do in plain words; never write the drill's camelCase id"
+    }
+
     var promptLabel: String {
         switch self {
         case .debate: "Debate prompt"
@@ -268,28 +256,87 @@ protocol DrillContextWriter {
 }
 
 enum DrillWriterError: Error {
-    case modelUnavailable
+    case missingAPIKey
+    case badResponse(status: Int, body: String)
+    case refused(String)
+    case unknownDrill(String)
     case noSessions
 }
 
-struct AppleDrillContextWriter: DrillContextWriter {
+/// Writes the drill with OpenAI's Chat Completions API using Structured Outputs:
+/// the JSON schema limits `drill` to the mode's drill list, so the model can't
+/// invent a drill or return malformed JSON.
+struct OpenAIDrillContextWriter: DrillContextWriter {
+    /// Change this one line to switch models. It must support Structured Outputs.
+    static let model = "gpt-4.1-mini"
+
     func writeDrill(for session: Session) async throws -> WrittenDrill {
-        guard SystemLanguageModel.default.isAvailable else { throw DrillWriterError.modelUnavailable }
+        let apiKey = Secrets.openAIAPIKey
+        guard !apiKey.isEmpty else { throw DrillWriterError.missingAPIKey }
 
-        let model = LanguageModelSession(instructions: DrillPromptText.instructions(for: session.mode))
-        let request = DrillPromptText.request(for: session)
+        let mode = session.mode
+        let schema: [String: Any] = [
+            "type": "object",
+            "properties": [
+                "feedback": ["type": "string", "description": mode.feedbackGuide],
+                "drill": [
+                    "type": "string",
+                    "enum": mode.drillOptions.map(\.rawValue),
+                    "description": "The drill from the list that best targets that weakness",
+                ],
+                "assignment": ["type": "string", "description": mode.assignmentGuide],
+            ],
+            "required": ["feedback", "drill", "assignment"],
+            "additionalProperties": false,
+        ]
+        let body: [String: Any] = [
+            "model": Self.model,
+            "messages": [
+                ["role": "system", "content": DrillPromptText.instructions(for: mode)],
+                ["role": "user", "content": DrillPromptText.request(for: session)],
+            ],
+            "response_format": [
+                "type": "json_schema",
+                "json_schema": ["name": "drill", "strict": true, "schema": schema],
+            ],
+        ]
 
-        switch session.mode {
-        case .debate:
-            let result = try await model.respond(to: request, generating: GeneratedDebateDrill.self).content
-            return WrittenDrill(feedback: result.feedback, drill: result.taskType, assignment: result.assignment)
-        case .interview:
-            let result = try await model.respond(to: request, generating: GeneratedInterviewDrill.self).content
-            return WrittenDrill(feedback: result.feedback, drill: result.drill, assignment: result.assignment)
-        case .speech:
-            let result = try await model.respond(to: request, generating: GeneratedPresentationDrill.self).content
-            return WrittenDrill(feedback: result.feedback, drill: result.drill, assignment: result.assignment)
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/chat/completions")!)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 30
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard status == 200 else {
+            throw DrillWriterError.badResponse(status: status, body: String(decoding: data.prefix(500), as: UTF8.self))
         }
+
+        struct Completion: Decodable {
+            struct Choice: Decodable {
+                struct Message: Decodable {
+                    let content: String?
+                    let refusal: String?
+                }
+                let message: Message
+            }
+            let choices: [Choice]
+        }
+        struct Output: Decodable {
+            let feedback: String
+            let drill: String
+            let assignment: String
+        }
+
+        let message = try JSONDecoder().decode(Completion.self, from: data).choices.first?.message
+        if let refusal = message?.refusal { throw DrillWriterError.refused(refusal) }
+        let output = try JSONDecoder().decode(Output.self, from: Data((message?.content ?? "").utf8))
+        guard let drill = mode.drillOptions.first(where: { $0.rawValue == output.drill }) else {
+            throw DrillWriterError.unknownDrill(output.drill)
+        }
+        return WrittenDrill(feedback: output.feedback, drill: drill, assignment: output.assignment)
     }
 }
 
@@ -320,7 +367,7 @@ enum DrillGenerator {
     }
 
     static func generate(for session: Session, writer: (any DrillContextWriter)? = nil, needsMoreSessions: Bool = false) async -> DrillPrompt {
-        let writer = writer ?? AppleDrillContextWriter()
+        let writer = writer ?? OpenAIDrillContextWriter()
 
         let result: WrittenDrill
         do {

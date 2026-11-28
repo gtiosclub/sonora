@@ -13,12 +13,20 @@ enum UserProgressService {
     }
 
     static func record(userId: String, sessions: Int = 0, drills: Int = 0, xp: Int) async throws {
-        try await progress.document(userId).setData([
+        // One batch so lifetime and weekly XP are written together.
+        let batch = Firestore.firestore().batch()
+        batch.setData([
             "id": userId,
             "completedSessions": FieldValue.increment(Int64(sessions)),
             "completedDrills": FieldValue.increment(Int64(drills)),
             "lifetimeXP": FieldValue.increment(Int64(xp))
-        ], merge: true)
+        ], forDocument: progress.document(userId), merge: true)
+        if xp > 0 {
+            let week = LeaderboardWeek.key()
+            batch.setData(LeaderboardWeek.xpUpdate(userId: userId, weekKey: week, xp: xp),
+                          forDocument: LeaderboardWeek.usersCollection(weekKey: week).document(userId), merge: true)
+        }
+        try await batch.commit()
     }
 
     static func fetch(for userId: String) async throws -> UserProgress {
@@ -50,6 +58,9 @@ enum UserProgressService {
         let db = Firestore.firestore()
         let sessionRef = db.collection("Sessions").document(sessionID)
         let progressRef = progress.document(userId)
+        let week = LeaderboardWeek.key()
+        let weeklyRef = LeaderboardWeek.usersCollection(weekKey: week).document(userId)
+        let weeklyUpdate = LeaderboardWeek.xpUpdate(userId: userId, weekKey: week, xp: xp)
 
         // A transaction reads and writes as one step, so two calls can't both pass the check.
         _ = try await db.runTransaction { txn, errorPointer in
@@ -76,6 +87,7 @@ enum UserProgressService {
                 "completedSessions": FieldValue.increment(Int64(1)),
                 "lifetimeXP": FieldValue.increment(Int64(max(0, xp)))
             ], forDocument: progressRef, merge: true)
+            if xp > 0 { txn.setData(weeklyUpdate, forDocument: weeklyRef, merge: true) }
             return nil
         }
         
@@ -99,6 +111,9 @@ enum UserProgressService {
         let db = Firestore.firestore()
         let progressRef = progress.document(drill.userId)
         let markerRef = progressRef.collection("countedDrills").document(drill.id)
+        let week = LeaderboardWeek.key()
+        let weeklyRef = LeaderboardWeek.usersCollection(weekKey: week).document(drill.userId)
+        let weeklyUpdate = LeaderboardWeek.xpUpdate(userId: drill.userId, weekKey: week, xp: xp)
 
         _ = try await db.runTransaction { txn, errorPointer in
             let marker: DocumentSnapshot
@@ -113,6 +128,7 @@ enum UserProgressService {
                 "completedDrills": FieldValue.increment(Int64(1)),
                 "lifetimeXP": FieldValue.increment(Int64(max(0, xp)))
             ], forDocument: progressRef, merge: true)
+            if xp > 0 { txn.setData(weeklyUpdate, forDocument: weeklyRef, merge: true) }
             return nil
         }
         

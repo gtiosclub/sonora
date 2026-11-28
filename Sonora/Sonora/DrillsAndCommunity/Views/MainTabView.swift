@@ -29,6 +29,19 @@ struct MainTabView: View {
     }
 
     var body: some View {
+        // The tab bar sits *below* the content instead of floating over it, so
+        // every screen (including ones pushed inside a tab's NavigationStack)
+        // ends above the bar and its bottom stays reachable. Safe-area insets
+        // applied out here aren't passed into the NavigationStacks.
+        VStack(spacing: 0) {
+            tabContent
+            tabBar
+                .padding(.top, 8)
+        }
+        .background(HomeColor.background.ignoresSafeArea())
+    }
+
+    private var tabContent: some View {
         Group {
             switch tab {
             case .home:
@@ -44,7 +57,7 @@ struct MainTabView: View {
                 }
             }
         }
-        .safeAreaInset(edge: .bottom) { tabBar }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var tabBar: some View {
