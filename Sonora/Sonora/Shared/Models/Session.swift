@@ -19,7 +19,7 @@ struct Session: Identifiable, Codable, Equatable {
     var startTime: Date?  // when the session becomes active
     var createdAt: Date // when a pending session is created
 
-    var durationSeconds: Int?
+    var durationSeconds: Double?
     var topic: Topics?
     var sessionSkillScore: SessionSkillScore?
     var summary: String?
@@ -36,6 +36,7 @@ struct Session: Identifiable, Codable, Equatable {
     
     enum Status: String, Codable {
         case active, pending, deleted, completed
+        case declined
     }
     
     enum OpponentType: String, Codable {

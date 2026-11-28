@@ -7,41 +7,30 @@
 
 import FirebaseFirestore
 
-func acceptSession(userId: String, sessionID: String) async throws{
-    // async means the function performs asynchronous work
-    // throws means the function can pass errors back to whoever called it
-    
-    //access firestore
+func acceptSession(userId: String, sessionID: String) async throws {
     let db = Firestore.firestore()
-    
-    // Get the session document using its ID
-    let sessionRef = db.collection("Sessions").document(sessionID)
-    let document = try await sessionRef.getDocument()
-    
-    // check to make sure the session exists
-    guard document.exists else{
-        return
-    }
-    
-    // Make sure the user is a participant in the session
-    guard let participants = document.data()?["participants"] as? [String],
-          participants.contains(userId) else {
-        return
-    }
-    
-    // Add the user to the list of users who accepted the session
-    try await sessionRef.updateData(["acceptedBy": FieldValue.arrayUnion([userId])])
-    
-    // Get the updated session data
-    let updatedDocument = try await sessionRef.getDocument()
-    // Get the updated list of users who accepted
-    guard let acceptedBy = updatedDocument.data()?["acceptedBy"] as? [String] else {
-        return
-    }
-    
-    // Start the session once all participants have accepted
-    if acceptedBy.count == participants.count {
-        try await sessionRef.updateData(["status":"active"])
+    let ref = db.collection("Sessions").document(sessionID)
+
+    _ = try await db.runTransaction { txn, errorPointer in
+        let snap: DocumentSnapshot
+        do { snap = try txn.getDocument(ref) }
+        catch { errorPointer?.pointee = error as NSError; return nil }
+
+        guard let data = snap.data(),
+              let participants = data["participants"] as? [String],
+              participants.contains(userId),
+              (data["status"] as? String) == "pending" else { return nil }
+
+        var accepted = data["acceptedBy"] as? [String] ?? []
+        if !accepted.contains(userId) { accepted.append(userId) }
+
+        var update: [String: Any] = ["acceptedBy": accepted]
+        if Set(accepted) == Set(participants) {
+            update["status"] = "active"
+            update["startTime"] = Timestamp(date: Date())
+        }
+        txn.updateData(update, forDocument: ref)
+        return nil
     }
 }
 
@@ -101,10 +90,15 @@ func joinQueue(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) as
 
 // Creates a new active session against the AI and saves it to the "Sessions" collection.
 // Returns the saved session.
-func createAISession(userId: String, mode: Session.Mode) async throws -> Session {
+func createAISession(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> Session {
+    // Debate sessions must have a selected topic
+    if mode == .debate && topic == nil {
+        throw JoinQueueError.missingDebateTopic
+    }
+
     let ref = Firestore.firestore().collection("Sessions").document()  // new empty doc: Firestore picks the ID
     let now = Date()
-    let session = Session(
+    var session = Session(
         id: ref.documentID,
         participants: [userId],
         status: .active,
@@ -114,6 +108,10 @@ func createAISession(userId: String, mode: Session.Mode) async throws -> Session
         startTime: now,
         createdAt: now
     )
+    // Save the selected debate question on the session so the AI knows what to argue
+    if mode == .debate, let topic = topic {
+        session.prompt = topic.question
+    }
 
     try ref.setData(from: session)   // Dates are saved as Firestore timestamps
     return session
@@ -199,6 +197,98 @@ func createPendingSession(
     return session
 }
 
+// Observes sessions containing this user, including pending and terminal status changes.
+@discardableResult
+func listenForUserSessions(
+    userId: String,
+    since: Date,
+    onChange: @escaping (Result<[Session], Error>) -> Void
+) -> ListenerRegistration {
+    Firestore.firestore()
+        .collection("Sessions")
+        .whereField("participants", arrayContains: userId)
+        .addSnapshotListener { snapshot, error in
+            if let error { onChange(.failure(error)); return }
+            guard let snapshot else { return }
+            let sessions = snapshot.documents
+                .compactMap { try? decodeSession($0) }
+                .filter { $0.createdAt >= since.addingTimeInterval(-5) }  // small clock-skew buffer
+            onChange(.success(sessions))
+        }
+}
+
+// Observes status and participant changes for a single session.
+@discardableResult
+func listenToSession(
+    sessionId: String,
+    onChange: @escaping (Result<Session, Error>) -> Void
+) -> ListenerRegistration {
+    Firestore.firestore()
+        .collection("Sessions")
+        .document(sessionId)
+        .addSnapshotListener { snapshot, error in
+            if let error {
+                onChange(.failure(error))
+                return
+            }
+
+            guard let snapshot, snapshot.exists else { return }
+            do {
+                onChange(.success(try decodeSession(snapshot)))
+            } catch {
+                onChange(.failure(error))
+            }
+        }
+}
+
+func decodeSession(_ document: DocumentSnapshot) throws -> Session {
+    if var session = try? document.data(as: Session.self) {
+        session.id = document.documentID
+        return session
+    }
+
+    guard let data = document.data(),
+          let participants = data["participants"] as? [String],
+          let statusRawValue = data["status"] as? String,
+          let status = Session.Status(rawValue: statusRawValue),
+          let modeRawValue = data["mode"] as? String,
+          let mode = Session.Mode(rawValue: modeRawValue) else {
+        throw SessionListenerError.invalidSessionDocument
+    }
+
+    let createdAt = (data["createdAt"] as? Timestamp)?.dateValue() ?? .distantPast
+    let startTime = (data["startTime"] as? Timestamp)?.dateValue()
+    let opponentType = (data["opponentType"] as? String)
+        .flatMap(Session.OpponentType.init(rawValue:)) ?? .human
+
+    return Session(
+        id: document.documentID,
+        participants: participants,
+        status: status,
+        acceptedBy: data["acceptedBy"] as? [String] ?? [],
+        aIOpponent: nil,
+        mode: mode,
+        opponentType: opponentType,
+        startTime: startTime,
+        createdAt: createdAt,
+        durationSeconds: data["durationSeconds"] as? Double,
+        topic: nil,
+        sessionSkillScore: nil,
+        summary: data["summary"] as? String,
+        prompt: data["prompt"] as? String,
+        analysis: data["analysis"] as? String,
+        scores: data["scores"] as? [Int]
+    )
+}
+
+private enum SessionListenerError: LocalizedError {
+    case invalidSessionDocument
+
+    var errorDescription: String? {
+        "The session document is missing required fields."
+    }
+}
+
 func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? = nil) async throws -> Session? {
     // Unwraps waitingUser object
     if let matchedUser = try await findWaitingMatch(userId: userId,  mode: mode, topic: topic) {
@@ -223,67 +313,34 @@ func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? 
     }
 }
     
-func inviteFriendToSession(
-        fromUserId: String,
-        toUserId: String,
-        mode: Session.Mode
-    ) async throws -> String {
-        
-        let db = Firestore.firestore()
-        
-        let documentRef = try await db.collection("Sessions")
-            .addDocument(data: [
-                "participants": [fromUserId, toUserId],
-                "acceptedBy": [fromUserId],
-                "mode": mode.rawValue,
-                "status": "pending"
-            ])
-        
-        return documentRef.documentID
-}
 
-// Validates that a session with that session id exists and is currently active
-// Sets the status of that function to completed
-// Populates end time and sets duration in seconds
-func completeSession(sessionID: String) async throws{
-    //access firestore
+func inviteFriendToSession(
+    fromUserId: String,
+    toUserId: String,
+    mode: Session.Mode,
+    prompt: String? = nil
+) async throws -> String {
+
     let db = Firestore.firestore()
-    
-    // Get the session document using its ID
-    let sessionRef = db.collection("Sessions").document(sessionID)
-    let document = try await sessionRef.getDocument()
-    
-    // check to make sure the session exists
-    guard document.exists else{
-        return
+    let documentRef = db.collection("Sessions").document()
+
+    var session = Session(
+        id: documentRef.documentID,
+        participants: [fromUserId, toUserId],
+        status: .pending,
+        acceptedBy: [fromUserId],
+        mode: mode,
+        opponentType: .human,
+        startTime: nil,
+        createdAt: Date()
+    )
+
+    if mode == .debate {
+        session.prompt = prompt
     }
-    
-    // stores the status of the session
-    let status = document.get("status") as? String
-    
-    // check to make sure that session is active
-    guard status == "active" else{
-        return
-    }
-    
-    // sets status to completed
-    try await sessionRef.updateData(["status" : "completed"])
-    
-    // stores the start time of the session
-    let startTime = document.get("startTime") as? Timestamp
-    
-    // stores the start time as a Date
-    guard let startDate = startTime?.dateValue() else { return }
-    
-    // stores the end time of the session
-    let endDate = Date.now
-    
-    // stores the elapsed time of the session
-    let elapsedTime = endDate.timeIntervalSince(startDate)
-    
-    // populates end time and sets duration in seconds
-    try await
-        sessionRef.updateData(["durationSeconds" : elapsedTime])
+
+    try documentRef.setData(from: session)
+    return documentRef.documentID
 }
 
 // Stores video and transcript property in Firebase
@@ -294,3 +351,112 @@ func addTranscribedVideo(videoURL: String, transcript: String, sessionRef: Docum
 }
 
 
+
+// Validates that a session with that session id exists and is currently active
+// Sets the status of that function to completed
+// Populates end time and sets duration in seconds
+func completeSession(sessionID: String) async throws {
+    let db = Firestore.firestore()
+    let sessionRef = db.collection("Sessions").document(sessionID)
+
+    let document = try await sessionRef.getDocument()
+
+    guard document.exists else {
+        return
+    }
+
+    let status = document.get("status") as? String
+
+    guard status == "active" else {
+        return
+    }
+
+    // Get start time and calculate duration if it exists
+    if let startTime = document.get("startTime") as? Timestamp {
+        let startDate = startTime.dateValue()
+        let endDate = Date.now
+        let duration = endDate.timeIntervalSince(startDate)
+
+        try await sessionRef.updateData([
+            "durationSeconds": duration,
+            "endTime": Timestamp(date: endDate)
+        ])
+    }
+
+    // Mark session as completed
+    try await sessionRef.updateData([
+        "status": "completed"
+    ])
+
+    // Increment session count for each participant
+    if let participants = document.get("participants") as? [String] {
+        for userId in participants {
+            let userRef = db.collection("Users").document(userId)
+
+            try await userRef.setData([
+                "sessionCount": FieldValue.increment(Int64(1))
+            ], merge: true)
+        }
+    }
+}
+
+func calcUserSimilarity(userID1: String, userID2: String) async throws -> Double? {
+    // access firestore
+    let db = Firestore.firestore()
+    
+    // get the skill profile document for user 1
+    let user1Ref = db.collection("SkillProfile").document(userID1)
+    let doc1 = try await user1Ref.getDocument()
+    
+    // get the skill profile document for user 2
+    let user2Ref = db.collection("SkillProfile").document(userID2)
+    let doc2 = try await user2Ref.getDocument()
+    
+    
+    let data1 = doc1.data() ?? [:]
+    let data2 = doc2.data() ?? [:]
+    	
+    let categories = ["clarity", "confidence", "content", "engaging"]
+    
+    let baseline = 50.0
+    
+    var squaredDiffSum = 0.0
+    var validSkillCount = 0
+    
+    // loop through each skill category to calculate score differences
+    for category in categories {
+        var score1: Double = baseline
+        var score2: Double = baseline
+        
+        // extract score for user 1
+        if let categoryData = data1[category] as? [String: Any] {
+            if let score = categoryData["score"] as? Int {
+                score1 = Double(score)
+            }
+        }
+        
+        // extract score for user 2
+        if let categoryData = data2[category] as? [String: Any] {
+            if let score = categoryData["score"] as? Int {
+                score2 = Double(score)
+            }	
+        }
+        
+        // compare both users and normalize the difference
+        let diff = (score1 - score2) / 100.0
+        squaredDiffSum += (diff * diff)
+        validSkillCount += 1
+    }
+    
+    // safeguard to prevent dividing by 0
+    guard validSkillCount > 0 else {
+        return nil
+    }
+    
+    // calculate normalized Euclidean distance
+    let distance = sqrt(squaredDiffSum / Double(validSkillCount))
+    	
+    let similarity = 1.0 - distance
+    
+    return similarity
+}	

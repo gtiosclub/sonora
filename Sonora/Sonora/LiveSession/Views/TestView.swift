@@ -12,6 +12,7 @@ struct TestView: View {
     @State private var output = "Tap a button to test"   // shows the result on screen
     @State private var selectedDebateTopic: DebateTopic = .aiInEducation
     @State private var randomMatchOutput = "Tap random match button to test"
+    @State private var createdSessionId = ""
 
     var body: some View {
         VStack {
@@ -158,26 +159,48 @@ struct TestView: View {
                     }
             }
             Button("Test Create AI Session") {
-                            Task {
-                                do {
-                                    let session = try await createAISession(userId: auth.currentUser?.id ?? "", mode: .interview)
-                                    output = "Created: \(session.id)"
-                                } catch {
-                                    output = "ERROR: \(error.localizedDescription)"
-                                }
-                            }
-                        }
-
-                        Text(output)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                Task {
+                    do {
+                        let session = try await createAISession(userId: auth.currentUser?.id ?? "", mode: .interview)
+                        createdSessionId = session.id
+                        output = "Created: \(session.id)"
+                    } catch {
+                        output = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
+            Text(output)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
             
             Button("Test Complete Session") {
                 Task {
                     do {
-                        try await completeSession(sessionID: "LYtYJeufsUqX7lRXoN3S")
+                        try await completeSession(sessionID: createdSessionId)
+                        output = "COMPLETED \(createdSessionId)!"
                     } catch {
-                        print("Failed with error: \(error.localizedDescription)")
+                        output = "ERROR: \(error.localizedDescription)"
+                    }
+                }
+            }
+            
+            Button("Test User Similarity") {
+                Task {
+                    do {
+                       
+                        let userA = "ZgzEUVYokfhBWcL8BgxhQVF3u1n1"
+                        
+                        let userB = "yjZDBcRicKdfk9ekR4z6ZwGhLJ52"
+                        
+                        let userNoScores = "cG9TJRamjBOTITyMgYnJEJPO8ki2"
+                        
+                        if let similarity = try await calcUserSimilarity(userID1: userA, userID2: userB) {
+                            output = String(format: "Similarity: %.2f (%.0f%% similar)", similarity, similarity * 100)
+                        } else {
+                            output = "Cannot determine similarity"
+                        }
+                    } catch {
+                        output = "ERROR: \(error.localizedDescription)"
                     }
                 }
             }

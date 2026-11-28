@@ -70,7 +70,7 @@ struct SpeechReportDebugView: View {
         }
 
         // Fixtures must be in the app target's "Copy Bundle Resources".
-        guard let videoURL = Bundle.main.url(forResource: "filler_words_testing", withExtension: "mov") else {
+        guard let videoURL = Bundle.main.url(forResource: "posture_stability1", withExtension: "mov") else {
             errorMessage = "Couldn't find filler_words_testing.mov in the app bundle."
             return
         }
