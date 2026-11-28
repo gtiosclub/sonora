@@ -19,13 +19,16 @@ struct Session: Identifiable, Codable, Equatable {
     var startTime: Date?  // when the session becomes active
     var createdAt: Date // when a pending session is created
 
-    var durationSeconds: Int?
+    var durationSeconds: Double?
     var topic: Topics?
     var sessionSkillScore: SessionSkillScore?
     var summary: String?
     var prompt: String?
     var analysis: String?
     var scores: [Int]? //analysis subteams scores
+    
+    var video: String? // URL of the video
+    var transcript: String? // transcript of the video
     
     enum Mode: String, Codable {
         case interview, debate, speech

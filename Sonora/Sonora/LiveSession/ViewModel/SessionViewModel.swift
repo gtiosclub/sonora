@@ -414,7 +414,7 @@ func listenToSession(
         }
 }
 
-private func decodeSession(_ document: DocumentSnapshot) throws -> Session {
+func decodeSession(_ document: DocumentSnapshot) throws -> Session {
     if var session = try? document.data(as: Session.self) {
         session.id = document.documentID
         return session
@@ -444,7 +444,7 @@ private func decodeSession(_ document: DocumentSnapshot) throws -> Session {
         opponentType: opponentType,
         startTime: startTime,
         createdAt: createdAt,
-        durationSeconds: data["durationSeconds"] as? Int,
+        durationSeconds: data["durationSeconds"] as? Double,
         topic: nil,
         sessionSkillScore: nil,
         summary: data["summary"] as? String,
@@ -482,27 +482,44 @@ func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? 
     return nil
 }
     
-func inviteFriendToSession(
-        fromUserId: String,
-        toUserId: String,
-        mode: Session.Mode
-    ) async throws -> String {
 
-        let documentRef = Firestore.firestore().collection("Sessions").document()
-        let now = Date()
-        let session = Session(
-            id: documentRef.documentID,
-            participants: [fromUserId, toUserId],
-            status: .pending,
-            acceptedBy: [fromUserId],
-            mode: mode,
-            opponentType: .human,
-            startTime: nil,
-            createdAt: now
-        )
-        try documentRef.setData(from: session)
-        return documentRef.documentID
+func inviteFriendToSession(
+    fromUserId: String,
+    toUserId: String,
+    mode: Session.Mode,
+    prompt: String? = nil
+) async throws -> String {
+
+    let db = Firestore.firestore()
+    let documentRef = db.collection("Sessions").document()
+
+    var session = Session(
+        id: documentRef.documentID,
+        participants: [fromUserId, toUserId],
+        status: .pending,
+        acceptedBy: [fromUserId],
+        mode: mode,
+        opponentType: .human,
+        startTime: nil,
+        createdAt: Date()
+    )
+
+    if mode == .debate {
+        session.prompt = prompt
+    }
+
+    try documentRef.setData(from: session)
+    return documentRef.documentID
 }
+
+// Stores video and transcript property in Firebase
+// Will be called in completeSession
+func addTranscribedVideo(videoURL: String, transcript: String, sessionRef: DocumentReference) async throws {
+    try await sessionRef.updateData(["video" : videoURL])
+    try await sessionRef.updateData(["transcript" : transcript])
+}
+
+
 
 // Validates that a session with that session id exists and is currently active
 // Sets the status of that function to completed

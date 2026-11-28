@@ -14,11 +14,10 @@ import Foundation
 ///   - Engaging:   pace variety, vocabulary variety (MATTR), repetition (transcript)
 ///
 /// Not yet scored (needs work the codebase doesn't have):
-///   - Confidence › posture stability (needs tuned sway/tilt thresholds)
 ///   - Engaging › gesture use (needs a waist reference joint) and audience hooks (LLM)
-///   - Content (entirely LLM)
-/// Those are left out of their category averages; `content` stays nil and is excluded
-/// from the overall until the LLM layer exists.
+/// Content is scored separately by `ContentScorer` (on-device LLM) in `SessionAnalyzer`,
+/// since it's async; `score(...)` here leaves `content` nil, and the overall folds it in
+/// later via `overall(for:speechType:)` when it's available.
 struct SessionScorer {
 
     struct Result {
@@ -85,6 +84,13 @@ struct SessionScorer {
                     message: "Rushed here (~\(Int(windowWPM)) wpm)")
         }
 
+        let pauses = PauseAnalyzer().findPauses(in: words)
+        metrics.append(Metric(name: "Long pauses", value: Double(pauses.count)))
+        findings += pauses.map {
+            Finding(start: $0.start, duration: $0.duration,
+                    message: "Paused for \(String(format: "%.1f", $0.duration)) s")
+        }
+
         let clarity = Self.average([fillerBand, paceBand, mumbleBand, rushedBand].map(\.score))
 
         // MARK: Confidence
@@ -107,6 +113,23 @@ struct SessionScorer {
                                         message: "Low eye contact overall (\(Int(eyeContact))%)"))
             }
         }
+        
+        if let video, !video.postures.isEmpty {
+            let swayPercent = Self.standardDeviation(video.postures.map { Double($0.posture.shoulderMidX) }) * 100
+            let averageTilt = Self.average(video.postures.map { abs(Double($0.posture.shoulderTilt)) })
+
+            let postureBand: Band
+            if swayPercent < 2 && averageTilt < 5 {
+                postureBand = .good
+            } else if swayPercent > 5 || averageTilt > 10 {
+                postureBand = .needsWork
+            } else {
+                postureBand = .ok
+            }
+            confidenceBands.append(postureBand)
+            metrics.append(Metric(name: "Posture stability", value: swayPercent))
+            print("postures: \(video.postures.count), sway: \(swayPercent), tilt: \(averageTilt), band: \(postureBand)")
+        }
 
         let hedges = Self.hedgeCount(words)
         let hedgeRate = minutes > 0 ? Double(hedges) / minutes : 0
@@ -115,6 +138,7 @@ struct SessionScorer {
         metrics.append(Metric(name: "Hedging (per min)", value: hedgeRate))
 
         let confidence = Self.average(confidenceBands.map(\.score))
+        print("confidence: \(confidence)")
 
         // MARK: Engaging
 
@@ -126,9 +150,13 @@ struct SessionScorer {
         let mattrBand: Band = mattr > 0.72 ? .good : (mattr >= 0.65 ? .ok : .needsWork)
         metrics.append(Metric(name: "Vocabulary (MATTR)", value: mattr))
 
-        let repeats = Self.repeatedTrigrams(words)
+        let repeatedPhrases = Self.repeatedTrigramPhrases(words)
+        let repeats = repeatedPhrases.count
         let repeatBand: Band = repeats == 0 ? .good : (repeats <= 2 ? .ok : .needsWork)
         metrics.append(Metric(name: "Repeated phrases", value: Double(repeats)))
+        findings += repeatedPhrases.map {
+            Finding(start: $0.start, duration: 0, message: "Repeated phrase: \"\($0.phrase)\" (×\($0.count))")
+        }
 
         let engaging = Self.average([varietyBand, mattrBand, repeatBand].map(\.score))
 
@@ -153,7 +181,7 @@ struct SessionScorer {
         )
     }
 
-    // MARK: - Overall (content excluded + weights renormalized)
+    // MARK: - Overall (weights renormalized over the categories present)
 
     private static func overall(
         clarity: Double, confidence: Double, engaging: Double, speechType: SpeechType
@@ -161,6 +189,22 @@ struct SessionScorer {
         let w = speechType.weights
         let weighted = clarity * w.clarity + confidence * w.confidence + engaging * w.engagement
         let totalWeight = w.clarity + w.confidence + w.engagement
+        return toInt(totalWeight > 0 ? weighted / totalWeight : 0)
+    }
+
+    /// Recomputes the overall from an assembled `SessionScores`, folding in `content`
+    /// when it's present and renormalizing over whichever categories have a score.
+    /// Used by `SessionAnalyzer` once the async Content score (LLM) arrives.
+    static func overall(for scores: SessionScores, speechType: SpeechType) -> Int {
+        let w = speechType.weights
+        var weighted = Double(scores.clarity) * w.clarity
+            + Double(scores.confidence) * w.confidence
+            + Double(scores.engagement) * w.engagement
+        var totalWeight = w.clarity + w.confidence + w.engagement
+        if let content = scores.content {
+            weighted += Double(content) * w.content
+            totalWeight += w.content
+        }
         return toInt(totalWeight > 0 ? weighted / totalWeight : 0)
     }
 
@@ -267,16 +311,29 @@ struct SessionScorer {
     }
 
     /// Number of 3-word phrases said 3 or more times.
-    private static func repeatedTrigrams(_ words: [TranscriptWord]) -> Int {
-        let tokens = words.map { FillerWordAnalyzer.normalize($0.text) }.filter { !$0.isEmpty }
-        guard tokens.count >= 3 else { return 0 }
-        var counts: [String: Int] = [:]
-        for i in 0...(tokens.count - 3) {
-            counts[tokens[i..<i + 3].joined(separator: " "), default: 0] += 1
+    private static func repeatedTrigramPhrases(
+        _ words: [TranscriptWord]
+    ) -> [(phrase: String, count: Int, start: Double)] {
+        // Keep each word's start time next to its normalized text, skipping empty ones
+        let tokens = words.compactMap { word -> (text: String, start: Double)? in
+            let text = FillerWordAnalyzer.normalize(word.text)
+            return text.isEmpty ? nil : (text, word.start)
         }
-        return counts.values.filter { $0 >= 3 }.count
-    }
+        guard tokens.count >= 3 else { return [] }
 
+        var counts: [String: Int] = [:]
+        var firstStart: [String: Double] = [:]
+        for i in 0...(tokens.count - 3) {
+            let phrase = tokens[i..<i + 3].map { $0.text }.joined(separator: " ")
+            counts[phrase, default: 0] += 1
+            if firstStart[phrase] == nil { firstStart[phrase] = tokens[i].start }
+        }
+
+        return counts
+            .filter { $0.value >= 3 }
+            .map { (phrase: $0.key, count: $0.value, start: firstStart[$0.key] ?? 0) }
+            .sorted { $0.start < $1.start }
+    }
     // MARK: - Math helpers
 
     private static func spanMinutes(_ words: [TranscriptWord]) -> Double {
