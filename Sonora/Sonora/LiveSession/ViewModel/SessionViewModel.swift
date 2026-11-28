@@ -313,26 +313,34 @@ func requestRandomMatch(userId: String, mode: Session.Mode, topic: DebateTopic? 
     }
 }
     
-func inviteFriendToSession(
-        fromUserId: String,
-        toUserId: String,
-        mode: Session.Mode
-    ) async throws -> String {
 
-        let documentRef = Firestore.firestore().collection("Sessions").document()
-        let now = Date()
-        let session = Session(
-            id: documentRef.documentID,
-            participants: [fromUserId, toUserId],
-            status: .pending,
-            acceptedBy: [fromUserId],
-            mode: mode,
-            opponentType: .human,
-            startTime: nil,
-            createdAt: now
-        )
-        try documentRef.setData(from: session)
-        return documentRef.documentID
+func inviteFriendToSession(
+    fromUserId: String,
+    toUserId: String,
+    mode: Session.Mode,
+    prompt: String? = nil
+) async throws -> String {
+
+    let db = Firestore.firestore()
+    let documentRef = db.collection("Sessions").document()
+
+    var session = Session(
+        id: documentRef.documentID,
+        participants: [fromUserId, toUserId],
+        status: .pending,
+        acceptedBy: [fromUserId],
+        mode: mode,
+        opponentType: .human,
+        startTime: nil,
+        createdAt: Date()
+    )
+
+    if mode == .debate {
+        session.prompt = prompt
+    }
+
+    try documentRef.setData(from: session)
+    return documentRef.documentID
 }
 
 // Validates that a session with that session id exists and is currently active
