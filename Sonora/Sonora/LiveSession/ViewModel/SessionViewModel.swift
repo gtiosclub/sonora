@@ -271,7 +271,7 @@ func decodeSession(_ document: DocumentSnapshot) throws -> Session {
         opponentType: opponentType,
         startTime: startTime,
         createdAt: createdAt,
-        durationSeconds: data["durationSeconds"] as? Int,
+        durationSeconds: data["durationSeconds"] as? Double,
         topic: nil,
         sessionSkillScore: nil,
         summary: data["summary"] as? String,
