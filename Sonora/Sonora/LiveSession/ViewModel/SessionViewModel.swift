@@ -343,6 +343,15 @@ func inviteFriendToSession(
     return documentRef.documentID
 }
 
+// Stores video and transcript property in Firebase
+// Will be called in completeSession
+func addTranscribedVideo(videoURL: String, transcript: String, sessionRef: DocumentReference) async throws {
+    try await sessionRef.updateData(["video" : videoURL])
+    try await sessionRef.updateData(["transcript" : transcript])
+}
+
+
+
 // Validates that a session with that session id exists and is currently active
 // Sets the status of that function to completed
 // Populates end time and sets duration in seconds
